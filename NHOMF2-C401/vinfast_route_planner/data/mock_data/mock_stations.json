@@ -1,0 +1,240 @@
+{
+  "metadata": {
+    "project": "EV Trip Planning Assistant - NHOMF2-C401",
+    "route_name": "Hanoi - Da Nang (National Route 1A)",
+    "vehicle_config": {
+      "model": "VinFast VF8",
+      "battery_capacity_kwh": 82,
+      "avg_consumption_kwh_per_km": 0.22,
+      "max_charge_power_vehicle_kw": 150,
+      "default_setup_time_min": 10,
+      "connector": "CCS2"
+    },
+    "global_pricing": {
+      "standard_kwh_price": 3858,
+      "currency": "VND"
+    },
+    "safety_constraints": {
+      "soc_hard_min_percent": 10,
+      "soc_comfort_min_percent": 20,
+      "charging_model": "Linear"
+    },
+    "generated_at": "2026-04-09T10:00:00Z"
+  },
+  "stations": [
+    {
+      "id": "ST_HN_01",
+      "name": "VinFast Vinhomes Ocean Park",
+      "lat": 20.9941,
+      "lon": 105.9458,
+      "p_station_kw": 60,
+      "available_slots": 5,
+      "setup_time_min": 10,
+      "status": "active",
+      "amenities": [
+        "shopping_mall",
+        "coffee",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_PL_02",
+      "name": "Trạm sạc VinFast Phủ Lý",
+      "lat": 20.5372,
+      "lon": 105.9125,
+      "p_station_kw": 30,
+      "available_slots": 1,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "restroom",
+        "coffee"
+      ]
+    },
+    {
+      "id": "ST_NB_03",
+      "name": "VinFast Ninh Bình Center",
+      "lat": 20.2536,
+      "lon": 105.9745,
+      "p_station_kw": 60,
+      "available_slots": 0,
+      "setup_time_min": 7,
+      "status": "active",
+      "amenities": [
+        "restaurant",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_TH_04",
+      "name": "Vincom Plaza Thanh Hóa",
+      "lat": 19.8067,
+      "lon": 105.7761,
+      "p_station_kw": 60,
+      "available_slots": 4,
+      "setup_time_min": 12,
+      "status": "maintenance",
+      "amenities": [
+        "shopping_mall",
+        "restroom",
+        "cinema"
+      ]
+    },
+    {
+      "id": "ST_VI_05",
+      "name": "Siêu trạm sạc VinFast TP. Vinh",
+      "lat": 18.6732,
+      "lon": 105.6924,
+      "p_station_kw": 250,
+      "available_slots": 12,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "restaurant",
+        "coffee",
+        "wifi"
+      ]
+    },
+    {
+      "id": "ST_HT_06",
+      "name": "Trạm dừng nghỉ Hà Tĩnh",
+      "lat": 18.3421,
+      "lon": 105.9056,
+      "p_station_kw": 30,
+      "available_slots": 2,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "restroom",
+        "restaurant"
+      ]
+    },
+    {
+      "id": "ST_KA_07",
+      "name": "Trạm sạc Kỳ Anh",
+      "lat": 18.0625,
+      "lon": 106.2847,
+      "p_station_kw": 60,
+      "available_slots": 3,
+      "setup_time_min": 6,
+      "status": "active",
+      "amenities": [
+        "coffee",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_BD_08",
+      "name": "VinFast Ba Đồn - Quảng Bình",
+      "lat": 17.7521,
+      "lon": 106.4512,
+      "p_station_kw": 30,
+      "available_slots": 4,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_DH_09",
+      "name": "Siêu trạm Vincom Đồng Hới",
+      "lat": 17.4645,
+      "lon": 106.6231,
+      "p_station_kw": 150,
+      "available_slots": 8,
+      "setup_time_min": 10,
+      "status": "active",
+      "amenities": [
+        "shopping_mall",
+        "coffee",
+        "parking"
+      ]
+    },
+    {
+      "id": "ST_VL_10",
+      "name": "Trạm sạc Vĩnh Linh",
+      "lat": 17.0712,
+      "lon": 106.9621,
+      "p_station_kw": 30,
+      "available_slots": 2,
+      "setup_time_min": 5,
+      "status": "offline",
+      "amenities": [
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_DHA_11",
+      "name": "VinFast Đông Hà - Quảng Trị",
+      "lat": 16.8123,
+      "lon": 107.0945,
+      "p_station_kw": 60,
+      "available_slots": 1,
+      "setup_time_min": 7,
+      "status": "active",
+      "amenities": [
+        "restaurant",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_HU_12",
+      "name": "Siêu trạm sạc VinFast Huế",
+      "lat": 16.4621,
+      "lon": 107.5902,
+      "p_station_kw": 250,
+      "available_slots": 15,
+      "setup_time_min": 6,
+      "status": "active",
+      "amenities": [
+        "coffee",
+        "tourist_info",
+        "wifi"
+      ]
+    },
+    {
+      "id": "ST_PL_13",
+      "name": "Trạm dừng nghỉ Phú Lộc",
+      "lat": 16.2731,
+      "lon": 107.9124,
+      "p_station_kw": 30,
+      "available_slots": 0,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "restroom",
+        "restaurant"
+      ]
+    },
+    {
+      "id": "ST_LC_14",
+      "name": "Trạm sạc Lăng Cô",
+      "lat": 16.2301,
+      "lon": 108.0812,
+      "p_station_kw": 60,
+      "available_slots": 4,
+      "setup_time_min": 6,
+      "status": "active",
+      "amenities": [
+        "coffee",
+        "scenic_view"
+      ]
+    },
+    {
+      "id": "ST_DN_15",
+      "name": "VinFast Da Nang Center",
+      "lat": 16.0544,
+      "lon": 108.2022,
+      "p_station_kw": 150,
+      "available_slots": 7,
+      "setup_time_min": 10,
+      "status": "active",
+      "amenities": [
+        "shopping_mall",
+        "hotel",
+        "restroom"
+      ]
+    }
+  ]
+}
