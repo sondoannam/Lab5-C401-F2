@@ -25,9 +25,6 @@ def _station_label(p_kw: float) -> str:
         return "Fast DC Charging Station"
     return "Standard Charging Station"
 
-
-import streamlit as st
-
 def format_planner_output_for_llm(data: dict) -> str:
     """Convert planner output into plain text for the LLM."""
     lines = []
@@ -89,7 +86,6 @@ def format_planner_output_for_llm(data: dict) -> str:
     return "\n".join(lines)
 
 
-@st.cache_data(show_spinner=False)
 def generate_summary(plan_result: dict) -> str:
     """Call the LLM via OpenRouter and return a Markdown trip summary."""
     user_message = format_planner_output_for_llm(plan_result)

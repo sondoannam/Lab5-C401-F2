@@ -149,8 +149,8 @@ def _reachable_next_stations(
 def plan_route(
     origin: str, destination: str, soc_current: float, soc_comfort: float = 0.20
 ) -> dict:
-    origin_coords = _resolve_location(origin, ORIGIN_COORDS)
-    destination_coords = _resolve_location(destination, DESTINATION_COORDS)
+    origin_coords = resolve_location_coords(origin)
+    destination_coords = resolve_location_coords(destination)
 
     if origin_coords is None or destination_coords is None:
         return {
