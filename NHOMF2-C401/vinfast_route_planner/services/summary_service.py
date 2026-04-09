@@ -77,12 +77,19 @@ def generate_summary(plan_result: dict) -> str:
     """Gọi LLM qua OpenRouter, trả Markdown tóm tắt hành trình."""
     user_message = format_planner_output_for_llm(plan_result)
 
-    response = _client.chat.completions.create(
-        model=_MODEL,
-        messages=[
-            {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "user", "content": user_message},
-        ],
-        max_tokens=1024,
-    )
-    return response.choices[0].message.content
+    # Nếu không có API KEY thật, bypass phần gọi LLM để App không bị crash.
+    if not os.getenv("OPENROUTER_API_KEY"):
+        return f"⚠️ **CẢNH BÁO: Hệ thống chưa được cấu hình `OPENROUTER_API_KEY` trong biến môi trường hoặc file `.env`. Dưới đây là dữ liệu thô (chưa qua LLM):**\n\n```text\n{user_message}\n```"
+
+    try:
+        response = _client.chat.completions.create(
+            model=_MODEL,
+            messages=[
+                {"role": "system", "content": _SYSTEM_PROMPT},
+                {"role": "user", "content": user_message},
+            ],
+            max_tokens=1024,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"🔴 **Lỗi kết nối tới LLM Service:** {str(e)}\n\n```text\n{user_message}\n```"
