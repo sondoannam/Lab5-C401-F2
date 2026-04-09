@@ -12,7 +12,7 @@ _SYSTEM_PROMPT = (Path(__file__).parent / "system_prompt.txt").read_text(encodin
 # OpenRouter dùng giao thức OpenAI → chỉ đổi base_url
 _client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key=os.getenv("OPENROUTER_API_KEY"),
+    api_key=os.getenv("OPENROUTER_API_KEY", "dummy_key_for_testing"),
 )
 _MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-oss-20b:free")
 
@@ -54,7 +54,7 @@ def format_planner_output_for_llm(data: dict) -> str:
             else:
                 warning_tag = "VI PHẠM SoC_hard"
 
-            amenities_str = ", ".join(st.get("amenities", [])) or "không có thông tin"
+            amenities_str = st.get("amenities_text") or (", ".join(st.get("amenities", [])) or "không có thông tin")
 
             lines.append(f"\nĐIỂM DỪNG {i}: {st['name']} [{_station_label(st['p_station_kw'])}, {st['p_station_kw']} kW]")
             lines.append(f"  Khoảng cách từ điểm trước: {stop['distance_from_prev_km']} km (~{stop['drive_min_from_prev']} phút lái)")

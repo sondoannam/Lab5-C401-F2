@@ -16,7 +16,10 @@ class Station:
     status: str = "active"
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        from vinfast_route_planner.utils.formatters import format_amenities_for_llm
+        d = asdict(self)
+        d["amenities_text"] = format_amenities_for_llm(self.amenities)
+        return d
 
 
 @dataclass
