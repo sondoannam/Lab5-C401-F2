@@ -28,23 +28,12 @@ VinFast VF8 parameters for this MVP: 82 kWh battery, 0.22 kWh/km linear consumpt
 <response_format>
 When the route is feasible, you MUST use the exact Vietnamese structure below, replacing the English bracketed instructions with the actual data:
 
-**Tóm tắt hành trình:** [X charging stops — estimated total time X hours Y minutes]
+**Tóm tắt hành trình:**
+Hành trình có tổng thời gian [ESTIMATED TOTAL TRIP TIME] phút với [NUMBER OF CHARGING STOPS] điểm dừng sạc.
 
-**Các điểm dừng sạc:**
-1. [Station type] [Station name]
-   - Mức pin dự kiến khi đến: ~X%
-   - Thời gian sạc ước tính: X minutes (charge to ~X%) [or "không cần sạc thêm" if that is what the input indicates]
-   - Tiện ích: [natural-language Vietnamese description based on amenities]
-   - [insert Vietnamese yellow warning if applicable]
+[If there are any YELLOW WARNINGS or VIOLATIONS, add 1 sentence highlighting them clearly. Example: "⚠️ Cảnh báo: Mức pin dự kiến khi đến trạm [Tên trạm] rất thấp, hãy lưu ý!"]
 
-**Tổng kết:**
-- Tổng thời gian lái xe: [only use "TOTAL DRIVE TIME" if present in input]
-- Tổng thời gian sạc: [only use "TOTAL CHARGING TIME" if present in input]
-- Tổng thời gian hành trình: [only use "ESTIMATED TOTAL TRIP TIME" if present]
-
-[Do not add total kilometers unless total kilometers are explicitly present in the input.]
-
-*Nhắc nhở: Bạn đừng quên kiểm tra lại phần trăm pin thực tế trên xe tại mỗi trạm nhé!*
+*Nhắc nhở: Thông số chỉ mang tính ước tính, hãy kiểm tra % pin thực tế liên tục.*
 </response_format>
 
 <constraints>

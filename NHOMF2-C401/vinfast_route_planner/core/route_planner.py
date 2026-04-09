@@ -297,16 +297,28 @@ def plan_route(
 
     full_geometry = []
 
+    osrm_failed = False
     for i in range(len(waypoints) - 1):
-        segment = client.get_route_info(waypoints[i], waypoints[i + 1])
+        segment = None
+        if not osrm_failed:
+            segment = client.get_route_info(waypoints[i], waypoints[i + 1])
+            if segment is None:
+                osrm_failed = True  # Nếu lỗi 1 chặng, fallback toàn bộ các chặng sau để khỏi chờ timeout
 
         if segment and segment.get("geometry"):
             coords = segment["geometry"]["coordinates"]
-
             if i > 0:
                 coords = coords[1:]  # tránh trùng điểm
-
             full_geometry.extend(coords)
+        else:
+            # Fallback về đường thẳng (chim bay)
+            fallback_coords = [
+                [waypoints[i][1], waypoints[i][0]],
+                [waypoints[i + 1][1], waypoints[i + 1][0]],
+            ]
+            if i > 0:
+                fallback_coords = fallback_coords[1:]
+            full_geometry.extend(fallback_coords)
 
     return {
         "stops": [stop.to_dict() for stop in stops],

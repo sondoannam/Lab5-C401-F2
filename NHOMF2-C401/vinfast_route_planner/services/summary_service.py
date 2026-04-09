@@ -26,6 +26,8 @@ def _station_label(p_kw: float) -> str:
     return "Standard Charging Station"
 
 
+import streamlit as st
+
 def format_planner_output_for_llm(data: dict) -> str:
     """Convert planner output into plain text for the LLM."""
     lines = []
@@ -44,7 +46,7 @@ def format_planner_output_for_llm(data: dict) -> str:
 
     if stops:
         for i, stop in enumerate(stops, 1):
-            st = stop["station"]
+            st_station = stop["station"]
             soc_arrive_pct = round(stop["soc_arrive"] * 100)
             soc_depart_pct = round(stop["soc_depart"] * 100)
             soc_comfort_pct = round(data["soc_comfort"] * 100)
@@ -57,8 +59,8 @@ def format_planner_output_for_llm(data: dict) -> str:
             else:
                 warning_tag = "VIOLATION"
 
-            amenities_str = st.get("amenities_text") or (
-                ", ".join(st.get("amenities", [])) or "no amenity information"
+            amenities_str = st_station.get("amenities_text") or (
+                ", ".join(st_station.get("amenities", [])) or "no amenity information"
             )
             charge_line = (
                 f"Charge to: {soc_depart_pct}% (~{stop['charge_min']} minutes)"
@@ -67,7 +69,7 @@ def format_planner_output_for_llm(data: dict) -> str:
             )
 
             lines.append(
-                f"\nSTOP {i}: {st['name']} [{_station_label(st['p_station_kw'])}, {st['p_station_kw']} kW]"
+                f"\nSTOP {i}: {st_station['name']} [{_station_label(st_station['p_station_kw'])}, {st_station['p_station_kw']} kW]"
             )
             lines.append(
                 f"  Distance from previous point: {stop['distance_from_prev_km']} km (~{stop['drive_min_from_prev']} drive minutes)"
@@ -87,6 +89,7 @@ def format_planner_output_for_llm(data: dict) -> str:
     return "\n".join(lines)
 
 
+@st.cache_data(show_spinner=False)
 def generate_summary(plan_result: dict) -> str:
     """Call the LLM via OpenRouter and return a Markdown trip summary."""
     user_message = format_planner_output_for_llm(plan_result)

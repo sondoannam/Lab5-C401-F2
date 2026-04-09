@@ -2,6 +2,7 @@
 /.agent
 /.agents
 /references
+/NHOMF2-C401/vinfast_route_planner/docs/prompt
 
 # Python
 __pycache__/

@@ -12,6 +12,10 @@ def test_mock_station_dataset_loads():
     assert metadata["vehicle_config"]["model"] == "VinFast VF8"
     assert len(stations) == 15
     assert stations[0].status == "active"
+    for s in stations:
+        assert s.p_station_kw > 0
+        assert -90 <= s.lat <= 90
+        assert -180 <= s.lon <= 180
 
 
 def test_plan_route_returns_contract():
@@ -59,3 +63,16 @@ def test_plan_route_accepts_station_name_destination():
     result = plan_route("Ha Noi", "VinFast Da Nang Center", 0.85, 0.20)
     assert result["feasible"] is True
     assert len(result["stops"]) >= 1
+
+
+def test_plan_route_same_origin_destination():
+    result = plan_route("Ha Noi", "Ha Noi", 0.85, 0.20)
+    assert result["feasible"] is True
+    assert len(result["stops"]) == 0
+    assert result["total_time_min"] == 0
+
+
+def test_plan_route_unknown_location():
+    result = plan_route("UnknownCity", "Da Nang", 0.85, 0.20)
+    assert result["feasible"] is False
+    assert "Origin/destination chua duoc mock trong MVP." in result["warnings"]

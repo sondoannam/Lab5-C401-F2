@@ -1,7 +1,7 @@
 import sys
 import os
 
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
 
@@ -18,9 +18,23 @@ from vinfast_route_planner.utils.formatters import pct
 
 st.set_page_config(page_title="VinFast Route Planner MVP", layout="wide")
 
+st.markdown("""
+<style>
+    /* Ẩn thanh header và menu hamburger, footer của Streamlit */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 2rem;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # ===== HEADER =====
 st.title("🚗 VinFast EV Route Planner")
 st.caption("Lập kế hoạch hành trình xe điện với trạm sạc tối ưu")
+st.info("ℹ️ **Bản demo sử dụng dữ liệu tĩnh và chỉ mang tính chất minh họa.** Vui lòng không dùng để lập kế hoạch hành trình thực tế ngoài đời.", icon="📌")
 
 station_names = list_station_names()
 origin_options = [DEFAULT_ORIGIN, *station_names]
@@ -70,6 +84,14 @@ with col2:
         validation = workflow_result["validation_result"]
         summary_text = workflow_result["summary_text"]
 
+        if not result.get("feasible", False):
+            st.error("🚨 Không tìm thấy lộ trình khả thi!")
+            if result.get("warnings"):
+                for warning in result["warnings"]:
+                    st.warning(warning)
+            st.write(summary_text)
+            st.stop()  # Dừng render các phần Map/Table phía dưới
+
         # ===== SUMMARY =====
         st.subheader("📊 Summary")
 
@@ -103,26 +125,37 @@ with col2:
 
         if map_points:
             m = folium.Map(location=map_points[0], zoom_start=6)
-            folium.PolyLine(map_points, color="blue", weight=5).add_to(m)
+
+            # Vẽ đường (uu tiên geometry chi tiết từ OSRM)
+            route_coords = map_points
+            if result.get("geometry"):
+                coords = result["geometry"]["coordinates"]
+                route_coords = [[c[1], c[0]] for c in coords]  # OSRM là [lon, lat], folium cần [lat, lon]
+            
+            folium.PolyLine(route_coords, color="blue", weight=5, opacity=0.8).add_to(m)
+
             if origin_coords:
                 folium.Marker(
                     [origin_coords[0], origin_coords[1]],
                     tooltip=f"Start: {origin}",
-                    icon=folium.Icon(color="blue", icon="play"),
+                    icon=folium.Icon(color="blue", icon="play", prefix="fa"),
                 ).add_to(m)
             if destination_coords:
                 folium.Marker(
                     [destination_coords[0], destination_coords[1]],
                     tooltip=f"Destination: {destination}",
-                    icon=folium.Icon(color="red", icon="flag"),
+                    icon=folium.Icon(color="red", icon="flag", prefix="fa"),
                 ).add_to(m)
             for stop in result["stops"]:
                 folium.Marker(
                     [stop["station"]["lat"], stop["station"]["lon"]],
-                    tooltip=stop["station"]["name"],
-                    icon=folium.Icon(color="green", icon="bolt"),
+                    tooltip=f"{stop['station']['name']} ({stop['station']['p_station_kw']} kW)",
+                    icon=folium.Icon(color="green", icon="bolt", prefix="fa"),
                 ).add_to(m)
-            m.fit_bounds(map_points)
+            
+            # Chỉnh view bounds vừa vặn đẹp hơn
+            if route_coords:
+                m.fit_bounds(route_coords)
             st_folium(m, width=900, height=450)
         else:
             st.warning("⚠️ Không có dữ liệu bản đồ")
@@ -131,6 +164,7 @@ with col2:
         st.subheader("⚡ Charging Stops")
 
         if result["stops"]:
+            import pandas as pd
             table_rows = []
             for stop in result["stops"]:
                 table_rows.append(
@@ -144,6 +178,22 @@ with col2:
                     }
                 )
 
-            st.dataframe(table_rows, width="stretch")
+            df = pd.DataFrame(table_rows)
+            
+            # Tô viền hoặc bôi đỏ SoC cảnh báo < 20%
+            def highlight_soc(val):
+                if isinstance(val, str) and "%" in val:
+                    try:
+                        num = float(val.strip('%'))
+                        if num < int(VEHICLE["soc_hard"] * 100):
+                            return "color: #ff4b4b; font-weight: bold;"
+                        elif num < int(VEHICLE["soc_comfort_default"] * 100):
+                            return "color: #ffa421; font-weight: bold;"
+                    except ValueError:
+                        pass
+                return ""
+            
+            styled_df = df.style.map(highlight_soc, subset=["Arrive SoC"])
+            st.dataframe(styled_df, use_container_width=True, hide_index=True)
         else:
             st.success("🎉 Không cần sạc — đủ pin đến đích!")
