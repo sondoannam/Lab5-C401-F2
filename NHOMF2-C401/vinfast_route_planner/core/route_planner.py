@@ -83,6 +83,20 @@ def _distance_to_destination(
     return haversine_km(coords[0], coords[1], destination[0], destination[1])
 
 
+def _segment_metrics(
+    start: tuple[float, float],
+    end: tuple[float, float],
+    client: OSRMClient | None,
+) -> tuple[float, float]:
+    if client is not None:
+        route_info = client.get_route_info(start, end)
+        if route_info is not None:
+            return route_info["distance_km"], route_info["duration_min"]
+
+    distance_km = haversine_km(start[0], start[1], end[0], end[1])
+    return distance_km, estimate_drive_minutes(distance_km)
+
+
 def _soc_after_drive(soc_in: float, distance_km: float) -> float:
     energy_used = PLANNER_VEHICLE["e_kwh_per_km"] * distance_km
     return soc_in - (energy_used / PLANNER_VEHICLE["Q_kwh"])
@@ -125,12 +139,15 @@ def _reachable_next_stations(
     current_soc: float,
     candidates: list[Station],
     start_index: int,
+    osrm_client: OSRMClient | None,
 ) -> list[tuple[int, Station, float, float]]:
     reachable = []
     for index in range(start_index, len(candidates)):
         station = candidates[index]
-        distance_km = haversine_km(
-            current_coords[0], current_coords[1], station.lat, station.lon
+        distance_km, _ = _segment_metrics(
+            current_coords,
+            (station.lat, station.lon),
+            osrm_client,
         )
         soc_arrive = _soc_after_drive(current_soc, distance_km)
         if soc_arrive >= PLANNER_VEHICLE["soc_hard"]:
@@ -190,6 +207,7 @@ def plan_route(
 ) -> dict:
     origin_coords = resolve_location_coords(origin)
     destination_coords = resolve_location_coords(destination)
+    osrm_client = OSRMClient()
 
     if origin_coords is None or destination_coords is None:
         return {
@@ -221,27 +239,23 @@ def plan_route(
         current_soc_state: float,
         start_index: int,
     ):
-        distance_to_destination = haversine_km(
-            current_coords[0],
-            current_coords[1],
-            destination_coords[0],
-            destination_coords[1],
+        distance_to_destination, drive_min_to_destination = _segment_metrics(
+            current_coords,
+            destination_coords,
+            osrm_client,
         )
 
         soc_at_destination = _soc_after_drive(current_soc_state, distance_to_destination)
 
         if soc_at_destination >= PLANNER_VEHICLE["soc_hard"]:
-            return (
-                estimate_drive_minutes(distance_to_destination),
-                [],
-                soc_at_destination,
-            )
+            return (drive_min_to_destination, [], soc_at_destination)
 
         reachable = _reachable_next_stations(
             current_coords,
             current_soc_state,
             candidates,
             start_index,
+            osrm_client,
         )
 
         if not reachable:
@@ -252,7 +266,11 @@ def plan_route(
         target_soc = max(PLANNER_VEHICLE["soc_target_default"], soc_comfort)
 
         for candidate_index, station, distance_km, soc_arrive in reachable:
-            drive_min = estimate_drive_minutes(distance_km)
+            _, drive_min = _segment_metrics(
+                current_coords,
+                (station.lat, station.lon),
+                osrm_client,
+            )
 
             charge_min = _charge_minutes(
                 soc_arrive,
