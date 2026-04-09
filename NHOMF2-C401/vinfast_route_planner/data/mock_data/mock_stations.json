@@ -349,6 +349,431 @@
         "restroom",
         "convenience_store"
       ]
+    },
+    {
+      "id": "ST_HN_24",
+      "name": "VinFast Aeon Mall Long Biên",
+      "lat": 21.0254,
+      "lon": 105.8972,
+      "p_station_kw": 150,
+      "available_slots": 10,
+      "setup_time_min": 15,
+      "status": "active",
+      "amenities": [
+        "shopping_mall",
+        "cinema",
+        "restroom",
+        "parking"
+      ]
+    },
+    {
+      "id": "ST_HN_25",
+      "name": "VinFast Thanh Trì - Ngọc Hồi",
+      "lat": 20.9231,
+      "lon": 105.8456,
+      "p_station_kw": 60,
+      "available_slots": 3,
+      "setup_time_min": 8,
+      "status": "active",
+      "amenities": [
+        "restroom",
+        "coffee"
+      ]
+    },
+    {
+      "id": "ST_HN_26",
+      "name": "Vinhomes Smart City - S4",
+      "lat": 21.0025,
+      "lon": 105.7512,
+      "p_station_kw": 30,
+      "available_slots": 6,
+      "setup_time_min": 10,
+      "status": "active",
+      "amenities": [
+        "park",
+        "convenience_store",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_HNA_27",
+      "name": "Trạm sạc Duy Tiên - Hà Nam",
+      "lat": 20.5982,
+      "lon": 105.9234,
+      "p_station_kw": 60,
+      "available_slots": 2,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "restroom",
+        "restaurant"
+      ]
+    },
+    {
+      "id": "ST_NB_28",
+      "name": "Tam Điệp Energy Hub",
+      "lat": 20.1745,
+      "lon": 105.8912,
+      "p_station_kw": 150,
+      "available_slots": 8,
+      "setup_time_min": 10,
+      "status": "active",
+      "amenities": [
+        "coffee",
+        "restroom",
+        "wifi"
+      ]
+    },
+    {
+      "id": "ST_NB_29",
+      "name": "VinFast Gia Viễn",
+      "lat": 20.3512,
+      "lon": 105.8745,
+      "p_station_kw": 30,
+      "available_slots": 0,
+      "setup_time_min": 5,
+      "status": "maintenance",
+      "amenities": [
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_TH_30",
+      "name": "Bỉm Sơn North Station",
+      "lat": 20.0612,
+      "lon": 105.8345,
+      "p_station_kw": 60,
+      "available_slots": 4,
+      "setup_time_min": 7,
+      "status": "active",
+      "amenities": [
+        "restaurant",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_TH_31",
+      "name": "VinFast Hoằng Hóa",
+      "lat": 19.8645,
+      "lon": 105.8212,
+      "p_station_kw": 30,
+      "available_slots": 1,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "coffee"
+      ]
+    },
+    {
+      "id": "ST_TH_32",
+      "name": "Quảng Xương Service Stop",
+      "lat": 19.7212,
+      "lon": 105.7945,
+      "p_station_kw": 60,
+      "available_slots": 2,
+      "setup_time_min": 6,
+      "status": "active",
+      "amenities": [
+        "restroom",
+        "restaurant"
+      ]
+    },
+    {
+      "id": "ST_TH_33",
+      "name": "Nghi Sơn Petro Station",
+      "lat": 19.3456,
+      "lon": 105.7612,
+      "p_station_kw": 150,
+      "available_slots": 6,
+      "setup_time_min": 12,
+      "status": "active",
+      "amenities": [
+        "convenience_store",
+        "restroom",
+        "parking"
+      ]
+    },
+    {
+      "id": "ST_NA_34",
+      "name": "VinFast Hoàng Mai",
+      "lat": 19.2212,
+      "lon": 105.7123,
+      "p_station_kw": 60,
+      "available_slots": 3,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "coffee",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_NA_35",
+      "name": "Quỳnh Lưu Hub",
+      "lat": 19.1234,
+      "lon": 105.6543,
+      "p_station_kw": 30,
+      "available_slots": 2,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "restaurant"
+      ]
+    },
+    {
+      "id": "ST_NA_36",
+      "name": "Diễn Châu Plaza Station",
+      "lat": 18.9812,
+      "lon": 105.5912,
+      "p_station_kw": 60,
+      "available_slots": 0,
+      "setup_time_min": 8,
+      "status": "active",
+      "amenities": [
+        "shopping_mall",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_NA_37",
+      "name": "Nghi Lộc Supercharge",
+      "lat": 18.7845,
+      "lon": 105.6212,
+      "p_station_kw": 250,
+      "available_slots": 14,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "wifi",
+        "coffee",
+        "restaurant"
+      ]
+    },
+    {
+      "id": "ST_HT_38",
+      "name": "VinFast Hồng Lĩnh",
+      "lat": 18.5321,
+      "lon": 105.7123,
+      "p_station_kw": 60,
+      "available_slots": 4,
+      "setup_time_min": 7,
+      "status": "active",
+      "amenities": [
+        "restroom",
+        "coffee"
+      ]
+    },
+    {
+      "id": "ST_HT_39",
+      "name": "Cẩm Xuyên Service Area",
+      "lat": 18.2412,
+      "lon": 106.0123,
+      "p_station_kw": 30,
+      "available_slots": 2,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_QB_40",
+      "name": "Quảng Trạch Station",
+      "lat": 17.8543,
+      "lon": 106.3812,
+      "p_station_kw": 60,
+      "available_slots": 3,
+      "setup_time_min": 6,
+      "status": "active",
+      "amenities": [
+        "coffee",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_QB_41",
+      "name": "VinFast Bố Trạch",
+      "lat": 17.5812,
+      "lon": 106.5123,
+      "p_station_kw": 30,
+      "available_slots": 0,
+      "setup_time_min": 5,
+      "status": "offline",
+      "amenities": [
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_QB_42",
+      "name": "Quảng Ninh - Quảng Bình Hub",
+      "lat": 17.3212,
+      "lon": 106.7123,
+      "p_station_kw": 150,
+      "available_slots": 5,
+      "setup_time_min": 10,
+      "status": "active",
+      "amenities": [
+        "parking",
+        "restaurant",
+        "wifi"
+      ]
+    },
+    {
+      "id": "ST_QT_43",
+      "name": "Vĩnh Linh North",
+      "lat": 17.1123,
+      "lon": 106.9123,
+      "p_station_kw": 30,
+      "available_slots": 1,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_QT_44",
+      "name": "Gio Linh Plaza",
+      "lat": 16.9212,
+      "lon": 107.0512,
+      "p_station_kw": 60,
+      "available_slots": 4,
+      "setup_time_min": 8,
+      "status": "active",
+      "amenities": [
+        "coffee",
+        "shopping_mall"
+      ]
+    },
+    {
+      "id": "ST_QT_45",
+      "name": "VinFast Hải Lăng",
+      "lat": 16.6543,
+      "lon": 107.2512,
+      "p_station_kw": 60,
+      "available_slots": 2,
+      "setup_time_min": 7,
+      "status": "active",
+      "amenities": [
+        "restroom",
+        "restaurant"
+      ]
+    },
+    {
+      "id": "ST_HUE_46",
+      "name": "Phong Điền - Huế",
+      "lat": 16.5812,
+      "lon": 107.3812,
+      "p_station_kw": 30,
+      "available_slots": 3,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_HUE_47",
+      "name": "Vincom Plaza Huế Hub",
+      "lat": 16.4678,
+      "lon": 107.5945,
+      "p_station_kw": 150,
+      "available_slots": 12,
+      "setup_time_min": 12,
+      "status": "active",
+      "amenities": [
+        "shopping_mall",
+        "cinema",
+        "parking",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_HUE_48",
+      "name": "Hương Thủy Station",
+      "lat": 16.4123,
+      "lon": 107.6543,
+      "p_station_kw": 60,
+      "available_slots": 5,
+      "setup_time_min": 6,
+      "status": "active",
+      "amenities": [
+        "coffee",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_DN_49",
+      "name": "VinFast Liên Chiểu - Đà Nẵng",
+      "lat": 16.0912,
+      "lon": 108.1512,
+      "p_station_kw": 150,
+      "available_slots": 8,
+      "setup_time_min": 10,
+      "status": "active",
+      "amenities": [
+        "restaurant",
+        "restroom",
+        "wifi"
+      ]
+    },
+    {
+      "id": "ST_DN_50",
+      "name": "Cẩm Lệ Energy Center",
+      "lat": 16.0212,
+      "lon": 108.1812,
+      "p_station_kw": 60,
+      "available_slots": 4,
+      "setup_time_min": 7,
+      "status": "active",
+      "amenities": [
+        "coffee",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_DN_51",
+      "name": "VinFast Ngũ Hành Sơn",
+      "lat": 15.9912,
+      "lon": 108.2512,
+      "p_station_kw": 60,
+      "available_slots": 0,
+      "setup_time_min": 8,
+      "status": "maintenance",
+      "amenities": [
+        "tourist_info",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_DN_52",
+      "name": "VinFast Sơn Trà Hub",
+      "lat": 16.0712,
+      "lon": 108.2345,
+      "p_station_kw": 30,
+      "available_slots": 2,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "scenic_view",
+        "coffee"
+      ]
+    },
+    {
+      "id": "ST_DN_53",
+      "name": "Siêu trạm Hòa Vang",
+      "lat": 16.0123,
+      "lon": 108.1234,
+      "p_station_kw": 250,
+      "available_slots": 20,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "restaurant",
+        "hotel",
+        "restroom",
+        "wifi"
+      ]
     }
   ]
 }
