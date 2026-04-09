@@ -32,7 +32,7 @@ When the route is feasible, you MUST use the exact Vietnamese structure below, r
 
 **Các điểm dừng sạc:**
 1. [Station type] [Station name]
-   - SoC dự kiến khi đến: ~X%
+   - Mức pin dự kiến khi đến: ~X%
    - Thời gian sạc ước tính: X minutes (charge to ~X%) [or "không cần sạc thêm" if that is what the input indicates]
    - Tiện ích: [natural-language Vietnamese description based on amenities]
    - [insert Vietnamese yellow warning if applicable]
