@@ -1,5 +1,8 @@
+
+
 from functools import lru_cache
 
+from vinfast_route_planner.services.osrm_client import OSRMClient
 from vinfast_route_planner.core.config import VEHICLE
 from vinfast_route_planner.core.models import RouteStop, Station
 from vinfast_route_planner.services.distance_service import (
@@ -141,6 +144,7 @@ def plan_route(
 ) -> dict:
     origin_coords = _resolve_location(origin, ORIGIN_COORDS)
     destination_coords = _resolve_location(destination, DESTINATION_COORDS)
+
     if origin_coords is None or destination_coords is None:
         return {
             "stops": [],
@@ -149,7 +153,9 @@ def plan_route(
             "warnings": ["Origin/destination chua duoc mock trong MVP."],
             "soc_hard": PLANNER_VEHICLE["soc_hard"],
             "soc_comfort": soc_comfort,
+            "geometry": None,
         }
+
     if origin_coords == destination_coords:
         return {
             "stops": [],
@@ -158,6 +164,7 @@ def plan_route(
             "warnings": [],
             "soc_hard": PLANNER_VEHICLE["soc_hard"],
             "soc_comfort": soc_comfort,
+            "geometry": None,
         }
 
     candidates = _sorted_candidate_stations(origin_coords, destination_coords)
@@ -167,16 +174,22 @@ def plan_route(
         current_coords: tuple[float, float],
         current_soc_state: float,
         used_station_ids: frozenset[str],
-    ) -> tuple[float, list[tuple[Station, float, float, int, float]], float] | None:
+    ):
         distance_to_destination = haversine_km(
             current_coords[0],
             current_coords[1],
             destination_coords[0],
             destination_coords[1],
         )
+
         soc_at_destination = _soc_after_drive(current_soc_state, distance_to_destination)
+
         if soc_at_destination >= PLANNER_VEHICLE["soc_hard"]:
-            return estimate_drive_minutes(distance_to_destination), [], soc_at_destination
+            return (
+                estimate_drive_minutes(distance_to_destination),
+                [],
+                soc_at_destination,
+            )
 
         reachable = _reachable_next_stations(
             current_coords,
@@ -195,22 +208,26 @@ def plan_route(
 
         for station, distance_km, soc_arrive in reachable:
             drive_min = estimate_drive_minutes(distance_km)
+
             charge_min = _charge_minutes(
                 soc_arrive,
                 target_soc,
                 station.p_station_kw,
                 station.setup_time_min or PLANNER_VEHICLE["default_setup_time_min"],
             )
+
             next_plan = _best_plan(
                 (station.lat, station.lon),
                 round(target_soc, 4),
                 used_station_ids | frozenset({station.id}),
             )
+
             if next_plan is None:
                 continue
 
             future_time, future_stops, destination_soc = next_plan
             total_time = drive_min + charge_min + future_time
+
             current_stop = (station, distance_km, soc_arrive, charge_min, target_soc)
 
             if best_total_time is None or total_time < best_total_time:
@@ -224,6 +241,7 @@ def plan_route(
         return best_option
 
     best_plan = _best_plan(origin_coords, round(soc_current, 4), frozenset())
+
     if best_plan is None:
         return {
             "stops": [],
@@ -232,18 +250,22 @@ def plan_route(
             "warnings": ["Khong co tram sac kha dung tiep theo voi muc pin hien tai."],
             "soc_hard": PLANNER_VEHICLE["soc_hard"],
             "soc_comfort": soc_comfort,
+            "geometry": None,
         }
 
     total_time, stop_specs, destination_soc = best_plan
-    warnings: list[str] = []
+
+    warnings = []
     stops = []
 
     for station, distance_km, soc_arrive, charge_min, soc_depart in stop_specs:
         drive_min = estimate_drive_minutes(distance_km)
+
         if soc_arrive < soc_comfort:
             warnings.append(
                 f"Buffer mong khi den {station.name}: {round(soc_arrive * 100)}%."
             )
+
         stops.append(
             RouteStop(
                 station=station,
@@ -258,6 +280,27 @@ def plan_route(
     if destination_soc < soc_comfort:
         warnings.append("Buffer mong o chang cuoi, can nhac sac som hon.")
 
+    # ===== BUILD GEOMETRY (🔥 PHẦN MỚI) =====
+    client = OSRMClient()
+
+    waypoints = [origin_coords]
+    for stop in stops:
+        waypoints.append((stop.station.lat, stop.station.lon))
+    waypoints.append(destination_coords)
+
+    full_geometry = []
+
+    for i in range(len(waypoints) - 1):
+        segment = client.get_route_info(waypoints[i], waypoints[i + 1])
+
+        if segment and segment.get("geometry"):
+            coords = segment["geometry"]["coordinates"]
+
+            if i > 0:
+                coords = coords[1:]  # tránh trùng điểm
+
+            full_geometry.extend(coords)
+
     return {
         "stops": [stop.to_dict() for stop in stops],
         "total_time_min": int(total_time),
@@ -265,4 +308,10 @@ def plan_route(
         "warnings": warnings,
         "soc_hard": PLANNER_VEHICLE["soc_hard"],
         "soc_comfort": soc_comfort,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": full_geometry,
+        }
+        if full_geometry
+        else None,
     }
