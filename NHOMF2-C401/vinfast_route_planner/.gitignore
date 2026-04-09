@@ -45,3 +45,9 @@ htmlcov/
 
 # Logs
 *.log
+
+# Documentation constraints
+docs/prompt/
+.agent/
+.agents/
+references/
