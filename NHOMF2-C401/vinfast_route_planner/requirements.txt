@@ -2,3 +2,5 @@ streamlit
 pytest
 openai
 python-dotenv
+folium
+streamlit-folium
