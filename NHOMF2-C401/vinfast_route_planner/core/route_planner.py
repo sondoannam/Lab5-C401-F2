@@ -1,14 +1,13 @@
 
-
 from functools import lru_cache
 
-from vinfast_route_planner.services.osrm_client import OSRMClient
 from vinfast_route_planner.core.config import VEHICLE
 from vinfast_route_planner.core.models import RouteStop, Station
 from vinfast_route_planner.services.distance_service import (
     estimate_drive_minutes,
     haversine_km,
 )
+from vinfast_route_planner.services.osrm_client import OSRMClient
 from vinfast_route_planner.utils.data_loader import (
     filter_active_stations,
     get_station_by_name,
@@ -120,34 +119,70 @@ def _sorted_candidate_stations(
 def _reachable_next_stations(
     current_coords: tuple[float, float],
     current_soc: float,
-    destination_coords: tuple[float, float],
     candidates: list[Station],
-    used_station_ids: frozenset[str],
-) -> list[tuple[Station, float, float]]:
+    start_index: int,
+) -> list[tuple[int, Station, float, float]]:
     reachable = []
-    current_distance_to_destination = _distance_to_destination(
-        current_coords, destination_coords
-    )
-    for station in candidates:
-        if station.id in used_station_ids:
-            continue
-        station_coords = (station.lat, station.lon)
-        if (
-            _distance_to_destination(station_coords, destination_coords)
-            >= current_distance_to_destination
-        ):
-            continue
+    for index in range(start_index, len(candidates)):
+        station = candidates[index]
         distance_km = haversine_km(
             current_coords[0], current_coords[1], station.lat, station.lon
         )
         soc_arrive = _soc_after_drive(current_soc, distance_km)
         if soc_arrive >= PLANNER_VEHICLE["soc_hard"]:
-            reachable.append((station, distance_km, soc_arrive))
+            reachable.append((index, station, distance_km, soc_arrive))
     return reachable
 
 
+def _build_geometry(
+    origin_coords: tuple[float, float],
+    stops: list[RouteStop],
+    destination_coords: tuple[float, float],
+) -> dict | None:
+    client = OSRMClient()
+    waypoints = [origin_coords]
+    for stop in stops:
+        waypoints.append((stop.station.lat, stop.station.lon))
+    waypoints.append(destination_coords)
+
+    full_geometry = []
+    osrm_failed = False
+
+    for index in range(len(waypoints) - 1):
+        segment = None
+        if not osrm_failed:
+            segment = client.get_route_info(waypoints[index], waypoints[index + 1])
+            if segment is None:
+                osrm_failed = True
+
+        if segment and segment.get("geometry"):
+            coords = segment["geometry"]["coordinates"]
+            if index > 0:
+                coords = coords[1:]
+            full_geometry.extend(coords)
+        else:
+            fallback_coords = [
+                [waypoints[index][1], waypoints[index][0]],
+                [waypoints[index + 1][1], waypoints[index + 1][0]],
+            ]
+            if index > 0:
+                fallback_coords = fallback_coords[1:]
+            full_geometry.extend(fallback_coords)
+
+    if not full_geometry:
+        return None
+    return {
+        "type": "LineString",
+        "coordinates": full_geometry,
+    }
+
+
 def plan_route(
-    origin: str, destination: str, soc_current: float, soc_comfort: float = 0.20
+    origin: str,
+    destination: str,
+    soc_current: float,
+    soc_comfort: float = 0.20,
+    include_geometry: bool = False,
 ) -> dict:
     origin_coords = resolve_location_coords(origin)
     destination_coords = resolve_location_coords(destination)
@@ -180,7 +215,7 @@ def plan_route(
     def _best_plan(
         current_coords: tuple[float, float],
         current_soc_state: float,
-        used_station_ids: frozenset[str],
+        start_index: int,
     ):
         distance_to_destination = haversine_km(
             current_coords[0],
@@ -201,9 +236,8 @@ def plan_route(
         reachable = _reachable_next_stations(
             current_coords,
             current_soc_state,
-            destination_coords,
             candidates,
-            used_station_ids,
+            start_index,
         )
 
         if not reachable:
@@ -213,7 +247,7 @@ def plan_route(
         best_total_time = None
         target_soc = max(PLANNER_VEHICLE["soc_target_default"], soc_comfort)
 
-        for station, distance_km, soc_arrive in reachable:
+        for candidate_index, station, distance_km, soc_arrive in reachable:
             drive_min = estimate_drive_minutes(distance_km)
 
             charge_min = _charge_minutes(
@@ -226,7 +260,7 @@ def plan_route(
             next_plan = _best_plan(
                 (station.lat, station.lon),
                 round(target_soc, 4),
-                used_station_ids | frozenset({station.id}),
+                candidate_index + 1,
             )
 
             if next_plan is None:
@@ -247,7 +281,7 @@ def plan_route(
 
         return best_option
 
-    best_plan = _best_plan(origin_coords, round(soc_current, 4), frozenset())
+    best_plan = _best_plan(origin_coords, round(soc_current, 4), 0)
 
     if best_plan is None:
         return {
@@ -287,39 +321,6 @@ def plan_route(
     if destination_soc < soc_comfort:
         warnings.append("Buffer mong o chang cuoi, can nhac sac som hon.")
 
-    # ===== BUILD GEOMETRY (🔥 PHẦN MỚI) =====
-    client = OSRMClient()
-
-    waypoints = [origin_coords]
-    for stop in stops:
-        waypoints.append((stop.station.lat, stop.station.lon))
-    waypoints.append(destination_coords)
-
-    full_geometry = []
-
-    osrm_failed = False
-    for i in range(len(waypoints) - 1):
-        segment = None
-        if not osrm_failed:
-            segment = client.get_route_info(waypoints[i], waypoints[i + 1])
-            if segment is None:
-                osrm_failed = True  # Nếu lỗi 1 chặng, fallback toàn bộ các chặng sau để khỏi chờ timeout
-
-        if segment and segment.get("geometry"):
-            coords = segment["geometry"]["coordinates"]
-            if i > 0:
-                coords = coords[1:]  # tránh trùng điểm
-            full_geometry.extend(coords)
-        else:
-            # Fallback về đường thẳng (chim bay)
-            fallback_coords = [
-                [waypoints[i][1], waypoints[i][0]],
-                [waypoints[i + 1][1], waypoints[i + 1][0]],
-            ]
-            if i > 0:
-                fallback_coords = fallback_coords[1:]
-            full_geometry.extend(fallback_coords)
-
     return {
         "stops": [stop.to_dict() for stop in stops],
         "total_time_min": int(total_time),
@@ -327,10 +328,7 @@ def plan_route(
         "warnings": warnings,
         "soc_hard": PLANNER_VEHICLE["soc_hard"],
         "soc_comfort": soc_comfort,
-        "geometry": {
-            "type": "LineString",
-            "coordinates": full_geometry,
-        }
-        if full_geometry
+        "geometry": _build_geometry(origin_coords, stops, destination_coords)
+        if include_geometry
         else None,
     }

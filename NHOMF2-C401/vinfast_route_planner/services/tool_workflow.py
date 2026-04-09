@@ -12,12 +12,14 @@ def planner_tool(
     destination: str,
     soc_current: float,
     soc_comfort: float,
+    include_geometry: bool = False,
 ) -> dict:
     return plan_route(
         origin=origin,
         destination=destination,
         soc_current=soc_current,
         soc_comfort=soc_comfort,
+        include_geometry=include_geometry,
     )
 
 
@@ -71,6 +73,7 @@ def run_trip_planner_workflow(
     destination: str,
     soc_current: float,
     soc_comfort: float,
+    include_geometry: bool = False,
 ) -> dict:
     plan_result = call_tool(
         "planner_tool",
@@ -78,6 +81,7 @@ def run_trip_planner_workflow(
         destination=destination,
         soc_current=soc_current,
         soc_comfort=soc_comfort,
+        include_geometry=include_geometry,
     )
     validation_result = call_tool("validate_plan_tool", plan_result=plan_result)
     summary_text = call_tool(

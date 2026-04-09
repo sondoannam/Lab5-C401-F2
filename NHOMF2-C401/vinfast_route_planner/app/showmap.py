@@ -74,6 +74,7 @@ with col2:
                 destination=destination,
                 soc_current=soc_current_pct / 100,
                 soc_comfort=soc_comfort_pct / 100,
+                include_geometry=True,
             )
             st.session_state["workflow_result"] = workflow_result
 
