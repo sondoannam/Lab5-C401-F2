@@ -1,5 +1,9 @@
-from data.station_repository import load_metadata, load_stations
-from core.planner import plan_route
+from vinfast_route_planner.core.planner import plan_route
+from vinfast_route_planner.utils.data_loader import (
+    list_station_names,
+    load_metadata,
+    load_stations,
+)
 
 
 def test_mock_station_dataset_loads():
@@ -43,3 +47,15 @@ def test_plan_route_low_soc_can_be_infeasible():
     assert result["feasible"] is False
     assert result["stops"] == []
     assert "Khong co tram sac kha dung tiep theo voi muc pin hien tai." in result["warnings"]
+
+
+def test_station_names_available_for_ui_options():
+    station_names = list_station_names()
+    assert "VinFast Da Nang Center" in station_names
+    assert "Siêu trạm sạc VinFast TP. Vinh" in station_names
+
+
+def test_plan_route_accepts_station_name_destination():
+    result = plan_route("Ha Noi", "VinFast Da Nang Center", 0.85, 0.20)
+    assert result["feasible"] is True
+    assert len(result["stops"]) >= 1

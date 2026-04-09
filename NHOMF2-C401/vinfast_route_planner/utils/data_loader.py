@@ -1,8 +1,8 @@
 import json
 import streamlit as st
 
-from core.config import STATIONS_FILE
-from core.models import Station
+from vinfast_route_planner.core.config import STATIONS_FILE
+from vinfast_route_planner.core.models import Station
 
 
 @st.cache_data
@@ -37,9 +37,16 @@ def load_stations() -> list[Station]:
 
 
 def filter_active_stations(stations: list[Station]) -> list[Station]:
-    """Loại bỏ các trạm bảo trì (không active) hoặc hết slot trống."""
     return [
         station
         for station in stations
         if station.status == "active" and station.available_slots > 0
     ]
+
+
+def get_station_by_name(name: str) -> Station | None:
+    return next((station for station in load_stations() if station.name == name), None)
+
+
+def list_station_names() -> list[str]:
+    return [station.name for station in load_stations()]

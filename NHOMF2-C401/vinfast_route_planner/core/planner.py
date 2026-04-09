@@ -1,9 +1,17 @@
 from functools import lru_cache
 
-from core.config import VEHICLE
-from core.models import RouteStop, Station
-from utils.data_loader import load_metadata, load_stations, filter_active_stations
-from services.distance_service import estimate_drive_minutes, haversine_km
+from vinfast_route_planner.core.config import VEHICLE
+from vinfast_route_planner.core.models import RouteStop, Station
+from vinfast_route_planner.services.distance_service import (
+    estimate_drive_minutes,
+    haversine_km,
+)
+from vinfast_route_planner.utils.data_loader import (
+    filter_active_stations,
+    get_station_by_name,
+    load_metadata,
+    load_stations,
+)
 
 
 DATASET_METADATA = load_metadata()
@@ -43,6 +51,15 @@ ORIGIN_COORDS = {
     "Ha Noi": (21.0285, 105.8542),
     "Hanoi": (21.0285, 105.8542),
 }
+
+
+def _resolve_location(name: str, fallback_coords: dict[str, tuple[float, float]]) -> tuple[float, float] | None:
+    if name in fallback_coords:
+        return fallback_coords[name]
+    station = get_station_by_name(name)
+    if station is None:
+        return None
+    return (station.lat, station.lon)
 
 
 def _distance_to_destination(
@@ -114,14 +131,23 @@ def _reachable_next_stations(
 
 
 def plan_route(origin: str, destination: str, soc_current: float, soc_comfort: float = 0.20) -> dict:
-    origin_coords = ORIGIN_COORDS.get(origin)
-    destination_coords = DESTINATION_COORDS.get(destination)
+    origin_coords = _resolve_location(origin, ORIGIN_COORDS)
+    destination_coords = _resolve_location(destination, DESTINATION_COORDS)
     if origin_coords is None or destination_coords is None:
         return {
             "stops": [],
             "total_time_min": 0,
             "feasible": False,
             "warnings": ["Origin/destination chua duoc mock trong MVP."],
+            "soc_hard": PLANNER_VEHICLE["soc_hard"],
+            "soc_comfort": soc_comfort,
+        }
+    if origin_coords == destination_coords:
+        return {
+            "stops": [],
+            "total_time_min": 0,
+            "feasible": True,
+            "warnings": [],
             "soc_hard": PLANNER_VEHICLE["soc_hard"],
             "soc_comfort": soc_comfort,
         }
