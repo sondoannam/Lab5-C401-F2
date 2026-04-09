@@ -46,12 +46,16 @@ PLANNER_VEHICLE = {
 DESTINATION_COORDS = {
     "Da Nang": (16.0544, 108.2022),
     "Danang": (16.0544, 108.2022),
+    "Đà Nẵng": (16.0544, 108.2022),
+    "Vinh": (18.6732, 105.6924),
 }
 
 
 ORIGIN_COORDS = {
     "Ha Noi": (21.0285, 105.8542),
     "Hanoi": (21.0285, 105.8542),
+    "Hà Nội": (21.0285, 105.8542),
+    "Vinh": (18.6732, 105.6924),
 }
 
 
@@ -192,7 +196,7 @@ def plan_route(
             "stops": [],
             "total_time_min": 0,
             "feasible": False,
-            "warnings": ["Origin/destination chua duoc mock trong MVP."],
+            "warnings": ["Hệ thống chưa hỗ trợ tìm đường cho điểm xuất phát hoặc điểm đến này."],
             "soc_hard": PLANNER_VEHICLE["soc_hard"],
             "soc_comfort": soc_comfort,
             "geometry": None,
@@ -288,7 +292,7 @@ def plan_route(
             "stops": [],
             "total_time_min": 0,
             "feasible": False,
-            "warnings": ["Khong co tram sac kha dung tiep theo voi muc pin hien tai."],
+            "warnings": ["Không tìm thấy trạm sạc khả dụng tiếp theo với mức pin hiện tại. Vui lòng tăng mức pin khởi hành hoặc chọn tuyến đường khác."],
             "soc_hard": PLANNER_VEHICLE["soc_hard"],
             "soc_comfort": soc_comfort,
             "geometry": None,
@@ -304,7 +308,7 @@ def plan_route(
 
         if soc_arrive < soc_comfort:
             warnings.append(
-                f"Buffer mong khi den {station.name}: {round(soc_arrive * 100)}%."
+                f"Dự trữ pin khi đến {station.name} khá thấp ({round(soc_arrive * 100)}%)."
             )
 
         stops.append(
@@ -319,7 +323,7 @@ def plan_route(
         )
 
     if destination_soc < soc_comfort:
-        warnings.append("Buffer mong o chang cuoi, can nhac sac som hon.")
+        warnings.append("Dự trữ pin ở chặng cuối khá thấp, bạn nên cân nhắc sạc thêm trước khi đến đích.")
 
     return {
         "stops": [stop.to_dict() for stop in stops],
