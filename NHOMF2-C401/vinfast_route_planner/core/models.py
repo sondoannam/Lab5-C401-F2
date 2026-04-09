@@ -9,8 +9,11 @@ class Station:
     lat: float
     lon: float
     p_station_kw: float
-    type: str
     amenities: List[str]
+    type: str = "DC"
+    available_slots: int = 0
+    setup_time_min: int = 0
+    status: str = "active"
 
     def to_dict(self) -> dict:
         return asdict(self)

@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-STATIONS_FILE = BASE_DIR / "data" / "stations.json"
+STATIONS_FILE = BASE_DIR / "data" / "mock_data" / "mock_stations.json"
 
 VEHICLE = {
     "model": "VinFast VF8",

@@ -4,7 +4,29 @@ from core.config import STATIONS_FILE
 from core.models import Station
 
 
-def load_stations() -> list[Station]:
+def load_station_dataset() -> dict:
     with open(STATIONS_FILE, "r", encoding="utf-8") as file:
-        raw_stations = json.load(file)
-    return [Station(**station) for station in raw_stations]
+        return json.load(file)
+
+
+def load_metadata() -> dict:
+    return load_station_dataset().get("metadata", {})
+
+
+def load_stations() -> list[Station]:
+    raw_stations = load_station_dataset().get("stations", [])
+    return [
+        Station(
+            id=station["id"],
+            name=station["name"],
+            lat=station["lat"],
+            lon=station["lon"],
+            p_station_kw=station["p_station_kw"],
+            type=station.get("type", "DC"),
+            amenities=station.get("amenities", []),
+            available_slots=station.get("available_slots", 0),
+            setup_time_min=station.get("setup_time_min", 0),
+            status=station.get("status", "active"),
+        )
+        for station in raw_stations
+    ]

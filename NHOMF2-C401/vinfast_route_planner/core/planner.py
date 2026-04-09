@@ -1,28 +1,63 @@
 from core.config import VEHICLE
 from core.models import RouteStop, Station
-from data.station_repository import load_stations
+from data.station_repository import load_metadata, load_stations
 from services.distance_service import estimate_drive_minutes, haversine_km
 
 
+DATASET_METADATA = load_metadata()
+VEHICLE_CONFIG = DATASET_METADATA.get("vehicle_config", {})
+SAFETY_CONSTRAINTS = DATASET_METADATA.get("safety_constraints", {})
+
+PLANNER_VEHICLE = {
+    "model": VEHICLE_CONFIG.get("model", VEHICLE["model"]),
+    "Q_kwh": float(VEHICLE_CONFIG.get("battery_capacity_kwh", VEHICLE["Q_kwh"])),
+    "e_kwh_per_km": float(
+        VEHICLE_CONFIG.get("avg_consumption_kwh_per_km", VEHICLE["e_kwh_per_km"])
+    ),
+    "p_vehicle_kw": float(
+        VEHICLE_CONFIG.get("max_charge_power_vehicle_kw", VEHICLE["p_vehicle_kw"])
+    ),
+    "soc_hard": float(
+        SAFETY_CONSTRAINTS.get("soc_hard_min_percent", VEHICLE["soc_hard"] * 100)
+    )
+    / 100,
+    "soc_comfort_default": float(
+        SAFETY_CONSTRAINTS.get(
+            "soc_comfort_min_percent", VEHICLE["soc_comfort_default"] * 100
+        )
+    )
+    / 100,
+    "soc_target_default": VEHICLE["soc_target_default"],
+    "default_setup_time_min": int(VEHICLE_CONFIG.get("default_setup_time_min", 0)),
+}
+
 DESTINATION_COORDS = {
     "Da Nang": (16.0544, 108.2022),
+    "Danang": (16.0544, 108.2022),
 }
 
 
 ORIGIN_COORDS = {
     "Ha Noi": (21.0285, 105.8542),
+    "Hanoi": (21.0285, 105.8542),
 }
 
 
 def _soc_after_drive(soc_in: float, distance_km: float) -> float:
-    energy_used = VEHICLE["e_kwh_per_km"] * distance_km
-    return soc_in - (energy_used / VEHICLE["Q_kwh"])
+    energy_used = PLANNER_VEHICLE["e_kwh_per_km"] * distance_km
+    return soc_in - (energy_used / PLANNER_VEHICLE["Q_kwh"])
 
 
-def _charge_minutes(soc_arrive: float, soc_depart: float, station_kw: float) -> int:
-    p_effective = min(VEHICLE["p_vehicle_kw"], station_kw)
-    energy_to_add = (soc_depart - soc_arrive) * VEHICLE["Q_kwh"]
-    return round((energy_to_add / p_effective) * 60)
+def _charge_minutes(
+    soc_arrive: float,
+    soc_depart: float,
+    station_kw: float,
+    setup_time_min: int,
+) -> int:
+    p_effective = min(PLANNER_VEHICLE["p_vehicle_kw"], station_kw)
+    energy_to_add = (soc_depart - soc_arrive) * PLANNER_VEHICLE["Q_kwh"]
+    charging_time_min = round((energy_to_add / p_effective) * 60)
+    return charging_time_min + setup_time_min
 
 
 def _sorted_candidate_stations(origin: tuple[float, float], destination: tuple[float, float]) -> list[Station]:
@@ -31,6 +66,7 @@ def _sorted_candidate_stations(origin: tuple[float, float], destination: tuple[f
     filtered = [
         station
         for station in stations
+        if station.status == "active" and station.available_slots > 0
         if haversine_km(origin[0], origin[1], station.lat, station.lon)
         < haversine_km(origin[0], origin[1], destination_lat, destination_lon)
     ]
@@ -46,7 +82,7 @@ def plan_route(origin: str, destination: str, soc_current: float, soc_comfort: f
             "total_time_min": 0,
             "feasible": False,
             "warnings": ["Origin/destination chua duoc mock trong MVP."],
-            "soc_hard": VEHICLE["soc_hard"],
+            "soc_hard": PLANNER_VEHICLE["soc_hard"],
             "soc_comfort": soc_comfort,
         }
 
@@ -65,7 +101,7 @@ def plan_route(origin: str, destination: str, soc_current: float, soc_comfort: f
             destination_coords[1],
         )
         soc_at_destination = _soc_after_drive(current_soc, distance_to_destination)
-        if soc_at_destination >= VEHICLE["soc_hard"]:
+        if soc_at_destination >= PLANNER_VEHICLE["soc_hard"]:
             total_time += estimate_drive_minutes(distance_to_destination)
             if soc_at_destination < soc_comfort:
                 warnings.append("Buffer mong o chang cuoi, can nhac sac som hon.")
@@ -79,7 +115,7 @@ def plan_route(origin: str, destination: str, soc_current: float, soc_comfort: f
                 current_coords[0], current_coords[1], station.lat, station.lon
             )
             soc_arrive = _soc_after_drive(current_soc, distance_km)
-            if soc_arrive >= VEHICLE["soc_hard"]:
+            if soc_arrive >= PLANNER_VEHICLE["soc_hard"]:
                 reachable.append((station, distance_km, soc_arrive))
 
         if not reachable:
@@ -88,7 +124,7 @@ def plan_route(origin: str, destination: str, soc_current: float, soc_comfort: f
                 "total_time_min": total_time,
                 "feasible": False,
                 "warnings": ["Khong co tram sac kha dung tiep theo voi muc pin hien tai."],
-                "soc_hard": VEHICLE["soc_hard"],
+                "soc_hard": PLANNER_VEHICLE["soc_hard"],
                 "soc_comfort": soc_comfort,
             }
 
@@ -98,8 +134,13 @@ def plan_route(origin: str, destination: str, soc_current: float, soc_comfort: f
                 item[0].lat, item[0].lon, destination_coords[0], destination_coords[1]
             ) * -1,
         )
-        soc_depart = max(VEHICLE["soc_target_default"], soc_comfort)
-        charge_min = _charge_minutes(soc_arrive, soc_depart, station.p_station_kw)
+        soc_depart = max(PLANNER_VEHICLE["soc_target_default"], soc_comfort)
+        charge_min = _charge_minutes(
+            soc_arrive,
+            soc_depart,
+            station.p_station_kw,
+            station.setup_time_min or PLANNER_VEHICLE["default_setup_time_min"],
+        )
         drive_min = estimate_drive_minutes(distance_km)
 
         if soc_arrive < soc_comfort:
@@ -126,6 +167,6 @@ def plan_route(origin: str, destination: str, soc_current: float, soc_comfort: f
         "total_time_min": total_time,
         "feasible": True,
         "warnings": warnings,
-        "soc_hard": VEHICLE["soc_hard"],
+        "soc_hard": PLANNER_VEHICLE["soc_hard"],
         "soc_comfort": soc_comfort,
     }
