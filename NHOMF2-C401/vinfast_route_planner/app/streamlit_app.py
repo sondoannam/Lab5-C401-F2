@@ -1,8 +1,7 @@
 import streamlit as st
 
 from vinfast_route_planner.core.config import DEFAULT_DESTINATION, DEFAULT_ORIGIN, VEHICLE
-from vinfast_route_planner.core.route_planner import plan_route
-from vinfast_route_planner.services.summary_service import generate_summary
+from vinfast_route_planner.services.tool_workflow import run_trip_planner_workflow
 from vinfast_route_planner.utils.data_loader import list_station_names
 from vinfast_route_planner.utils.formatters import minutes_to_text, pct
 
@@ -43,18 +42,21 @@ with st.form("planner_form"):
     submitted = st.form_submit_button("Lap lo trinh")
 
 if submitted:
-    result = plan_route(
+    workflow_result = run_trip_planner_workflow(
         origin=origin,
         destination=destination,
         soc_current=soc_current_pct / 100,
         soc_comfort=soc_comfort_pct / 100,
     )
+    result = workflow_result["plan_result"]
+    validation = workflow_result["validation_result"]
+    summary_text = workflow_result["summary_text"]
 
     st.subheader("Tong quan lo trinh")
     if result["feasible"]:
-        st.success(generate_summary(result))
+        st.success(summary_text)
     else:
-        st.error(generate_summary(result))
+        st.error(summary_text)
 
     metric_1, metric_2, metric_3 = st.columns(3)
     metric_1.metric("Trang thai", "Kha thi" if result["feasible"] else "Khong kha thi")
@@ -65,6 +67,15 @@ if submitted:
     st.write(
         f"Nguong toi thieu: {pct(result['soc_hard'])} | Muc du phong da chon: {pct(result['soc_comfort'])}"
     )
+
+    with st.expander("Tool workflow", expanded=False):
+        st.write(
+            f"Tools called: planner_tool -> validate_plan_tool -> summary_tool"
+        )
+        st.write(
+            f"Validation status: {'OK' if validation['is_consistent'] else 'Needs review'}"
+        )
+        st.json(validation)
 
     if result["warnings"]:
         st.subheader("Canh bao")

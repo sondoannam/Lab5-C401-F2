@@ -10,8 +10,9 @@ import folium
 from streamlit_folium import st_folium
 
 from vinfast_route_planner.core.config import DEFAULT_DESTINATION, DEFAULT_ORIGIN, VEHICLE
-from vinfast_route_planner.core.route_planner import plan_route
-from vinfast_route_planner.services.summary_service import generate_summary
+from vinfast_route_planner.core.route_planner import resolve_location_coords
+from vinfast_route_planner.services.tool_workflow import run_trip_planner_workflow
+from vinfast_route_planner.utils.data_loader import list_station_names
 from vinfast_route_planner.utils.formatters import pct
 
 
@@ -20,6 +21,10 @@ st.set_page_config(page_title="VinFast Route Planner MVP", layout="wide")
 # ===== HEADER =====
 st.title("🚗 VinFast EV Route Planner")
 st.caption("Lập kế hoạch hành trình xe điện với trạm sạc tối ưu")
+
+station_names = list_station_names()
+origin_options = [DEFAULT_ORIGIN, *station_names]
+destination_options = [DEFAULT_DESTINATION, *station_names]
 
 # ===== LAYOUT =====
 col1, col2 = st.columns([1, 2])
@@ -30,8 +35,8 @@ with col1:
 
 
     with st.form("planner_form"):
-        origin = st.text_input("Origin", value=DEFAULT_ORIGIN)
-        destination = st.text_input("Destination", value=DEFAULT_DESTINATION)
+        origin = st.selectbox("Origin", options=origin_options, index=origin_options.index(DEFAULT_ORIGIN))
+        destination = st.selectbox("Destination", options=destination_options, index=destination_options.index(DEFAULT_DESTINATION))
 
         soc_current_pct = st.slider("🔋 Current SoC (%)", 10, 100, 85)
         soc_comfort_pct = st.slider(
@@ -50,17 +55,20 @@ with col2:
     # ===== HANDLE SUBMIT =====
     if submitted:
         with st.spinner("🚀 Đang tính toán route..."):
-            result = plan_route(
+            workflow_result = run_trip_planner_workflow(
                 origin=origin,
                 destination=destination,
                 soc_current=soc_current_pct / 100,
                 soc_comfort=soc_comfort_pct / 100,
             )
-            st.session_state["result"] = result
+            st.session_state["workflow_result"] = workflow_result
 
     # ===== RENDER RESULT (LUÔN HIỂN THỊ) =====
-    if "result" in st.session_state:
-        result = st.session_state["result"]
+    if "workflow_result" in st.session_state:
+        workflow_result = st.session_state["workflow_result"]
+        result = workflow_result["plan_result"]
+        validation = workflow_result["validation_result"]
+        summary_text = workflow_result["summary_text"]
 
         # ===== SUMMARY =====
         st.subheader("📊 Summary")
@@ -68,9 +76,13 @@ with col2:
         colA, colB, colC = st.columns(3)
         colA.metric("Total Time", f"{result['total_time_min']} min")
         colB.metric("Stops", len(result["stops"]))
-        colC.metric("Final SoC", pct(result.get("final_soc", 0)))
+        final_soc = result["stops"][-1]["soc_depart"] if result["stops"] else 0
+        colC.metric("Last stop depart SoC", pct(final_soc))
 
-        st.write(generate_summary(result))
+        st.write(summary_text)
+        st.caption(
+            f"Tool flow: planner_tool -> validate_plan_tool -> summary_tool | Validation: {'OK' if validation['is_consistent'] else 'Needs review'}"
+        )
 
         # ===== WARNINGS =====
         if result["warnings"]:
@@ -79,37 +91,38 @@ with col2:
 
         # ===== MAP =====
         st.subheader("🗺️ Route Map")
+        origin_coords = resolve_location_coords(origin)
+        destination_coords = resolve_location_coords(destination)
+        map_points = []
+        if origin_coords:
+            map_points.append([origin_coords[0], origin_coords[1]])
+        for stop in result["stops"]:
+            map_points.append([stop["station"]["lat"], stop["station"]["lon"]])
+        if destination_coords:
+            map_points.append([destination_coords[0], destination_coords[1]])
 
-        if result.get("geometry"):
-            coords = result["geometry"]["coordinates"]
-            lat_lon_coords = [[c[1], c[0]] for c in coords]
-
-            m = folium.Map(location=lat_lon_coords[0], zoom_start=6)
-
-            # Route
-            folium.PolyLine(
-                lat_lon_coords,
-                color="blue",
-                weight=5
-            ).add_to(m)
-
-            # Start / End
-            folium.Marker(lat_lon_coords[0], tooltip="Start").add_to(m)
-            folium.Marker(lat_lon_coords[-1], tooltip="End").add_to(m)
-
-            # Stops
-            for stop in result["stops"]:
-                lat = stop["station"]["lat"]
-                lon = stop["station"]["lon"]
-
+        if map_points:
+            m = folium.Map(location=map_points[0], zoom_start=6)
+            folium.PolyLine(map_points, color="blue", weight=5).add_to(m)
+            if origin_coords:
                 folium.Marker(
-                    [lat, lon],
-                    tooltip=stop["station"]["name"],
-                    icon=folium.Icon(color="green", icon="bolt")
+                    [origin_coords[0], origin_coords[1]],
+                    tooltip=f"Start: {origin}",
+                    icon=folium.Icon(color="blue", icon="play"),
                 ).add_to(m)
-
-            m.fit_bounds(lat_lon_coords)
-
+            if destination_coords:
+                folium.Marker(
+                    [destination_coords[0], destination_coords[1]],
+                    tooltip=f"Destination: {destination}",
+                    icon=folium.Icon(color="red", icon="flag"),
+                ).add_to(m)
+            for stop in result["stops"]:
+                folium.Marker(
+                    [stop["station"]["lat"], stop["station"]["lon"]],
+                    tooltip=stop["station"]["name"],
+                    icon=folium.Icon(color="green", icon="bolt"),
+                ).add_to(m)
+            m.fit_bounds(map_points)
             st_folium(m, width=900, height=450)
         else:
             st.warning("⚠️ Không có dữ liệu bản đồ")

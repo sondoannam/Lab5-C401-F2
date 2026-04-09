@@ -67,6 +67,13 @@ def _resolve_location(
     return (station.lat, station.lon)
 
 
+def resolve_location_coords(name: str) -> tuple[float, float] | None:
+    coords = _resolve_location(name, ORIGIN_COORDS)
+    if coords is not None:
+        return coords
+    return _resolve_location(name, DESTINATION_COORDS)
+
+
 def _distance_to_destination(
     coords: tuple[float, float], destination: tuple[float, float]
 ) -> float:

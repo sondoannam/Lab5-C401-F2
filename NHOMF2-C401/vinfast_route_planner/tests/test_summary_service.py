@@ -1,6 +1,10 @@
 from unittest.mock import MagicMock, patch
 
-from vinfast_route_planner.services.summary_service import format_planner_output_for_llm, generate_summary, _station_label
+from vinfast_route_planner.services.summary_service import (
+    _station_label,
+    format_planner_output_for_llm,
+    generate_summary,
+)
 
 # --- Fixtures ---
 
@@ -79,35 +83,35 @@ YELLOW_WARNING_PLAN = {
 # --- _station_label ---
 
 def test_station_label_sieu_tram():
-    assert _station_label(250) == "Siêu trạm sạc VinFast"
-    assert _station_label(150) == "Siêu trạm sạc VinFast"
+    assert _station_label(250) == "VinFast Super Charging Hub"
+    assert _station_label(150) == "VinFast Super Charging Hub"
 
 
 def test_station_label_nhanh():
-    assert _station_label(60) == "Trạm sạc nhanh DC"
-    assert _station_label(100) == "Trạm sạc nhanh DC"
+    assert _station_label(60) == "Fast DC Charging Station"
+    assert _station_label(100) == "Fast DC Charging Station"
 
 
 def test_station_label_tieu_chuan():
-    assert _station_label(30) == "Trạm sạc tiêu chuẩn"
-    assert _station_label(59) == "Trạm sạc tiêu chuẩn"
+    assert _station_label(30) == "Standard Charging Station"
+    assert _station_label(59) == "Standard Charging Station"
 
 
 # --- format_planner_output_for_llm ---
 
 def test_format_feasible_contains_status():
     text = format_planner_output_for_llm(FEASIBLE_PLAN)
-    assert "TRẠNG THÁI: Khả thi" in text
+    assert "STATUS: Feasible" in text
 
 
 def test_format_infeasible_contains_status():
     text = format_planner_output_for_llm(INFEASIBLE_PLAN)
-    assert "TRẠNG THÁI: KHÔNG khả thi" in text
+    assert "STATUS: INFEASIBLE" in text
 
 
 def test_format_contains_stop_count():
     text = format_planner_output_for_llm(FEASIBLE_PLAN)
-    assert "SỐ ĐIỂM DỪNG SẠC: 2" in text
+    assert "NUMBER OF CHARGING STOPS: 2" in text
 
 
 def test_format_contains_station_names():
@@ -118,7 +122,7 @@ def test_format_contains_station_names():
 
 def test_format_contains_station_label():
     text = format_planner_output_for_llm(FEASIBLE_PLAN)
-    assert "Siêu trạm sạc VinFast" in text
+    assert "VinFast Super Charging Hub" in text
 
 
 def test_format_ok_warning_tag():
@@ -129,8 +133,7 @@ def test_format_ok_warning_tag():
 
 def test_format_yellow_warning_tag():
     text = format_planner_output_for_llm(YELLOW_WARNING_PLAN)
-    # soc_arrive=15% < soc_comfort=20% → CẢNH BÁO VÀNG
-    assert "CẢNH BÁO VÀNG" in text
+    assert "YELLOW WARNING" in text
 
 
 def test_format_contains_amenities():
@@ -142,18 +145,18 @@ def test_format_contains_amenities():
 
 def test_format_contains_system_warnings():
     text = format_planner_output_for_llm(YELLOW_WARNING_PLAN)
-    assert "CẢNH BÁO TỪ HỆ THỐNG" in text
+    assert "SYSTEM WARNINGS" in text
     assert "Buffer mong khi den Tram Ha Tinh" in text
 
 
 def test_format_no_stops_message():
     text = format_planner_output_for_llm(INFEASIBLE_PLAN)
-    assert "SỐ ĐIỂM DỪNG SẠC: 0" in text
+    assert "NUMBER OF CHARGING STOPS: 0" in text
 
 
 def test_format_contains_total_time():
     text = format_planner_output_for_llm(FEASIBLE_PLAN)
-    assert "578 phút" in text
+    assert "578 minutes" in text
 
 
 # --- generate_summary (mocked) ---
@@ -195,5 +198,5 @@ def test_generate_summary_user_message_contains_plan(mock_client):
     call_kwargs = mock_client.chat.completions.create.call_args
     messages = call_kwargs.kwargs.get("messages") or call_kwargs.args[0]
     user_msg = next(m["content"] for m in messages if m["role"] == "user")
-    assert "Khả thi" in user_msg
-    assert "578 phút" in user_msg
+    assert "Feasible" in user_msg
+    assert "578 minutes" in user_msg
