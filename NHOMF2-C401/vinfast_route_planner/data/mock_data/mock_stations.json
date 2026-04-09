@@ -235,6 +235,120 @@
         "hotel",
         "restroom"
       ]
+    },
+    {
+      "id": "ST_TH_16",
+      "name": "Trạm sạc VinFast Bỉm Sơn",
+      "lat": 20.0891,
+      "lon": 105.8672,
+      "p_station_kw": 60,
+      "available_slots": 3,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "restroom",
+        "convenience_store"
+      ]
+    },
+    {
+      "id": "ST_TH_17",
+      "name": "Trạm dừng nghỉ Nghi Sơn",
+      "lat": 19.3475,
+      "lon": 105.7481,
+      "p_station_kw": 150,
+      "available_slots": 6,
+      "setup_time_min": 8,
+      "status": "active",
+      "amenities": [
+        "restaurant",
+        "restroom",
+        "parking"
+      ]
+    },
+    {
+      "id": "ST_NA_18",
+      "name": "VinFast Hoàng Mai",
+      "lat": 19.2452,
+      "lon": 105.7023,
+      "p_station_kw": 60,
+      "available_slots": 2,
+      "setup_time_min": 6,
+      "status": "active",
+      "amenities": [
+        "coffee",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_NA_19",
+      "name": "Siêu trạm sạc Diễn Châu",
+      "lat": 18.9864,
+      "lon": 105.5895,
+      "p_station_kw": 250,
+      "available_slots": 10,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "shopping_mall",
+        "restaurant",
+        "wifi"
+      ]
+    },
+    {
+      "id": "ST_HT_20",
+      "name": "Trạm sạc Cẩm Xuyên",
+      "lat": 18.2512,
+      "lon": 106.0124,
+      "p_station_kw": 30,
+      "available_slots": 1,
+      "setup_time_min": 5,
+      "status": "active",
+      "amenities": [
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_QB_21",
+      "name": "Trạm dừng chân Đèo Ngang",
+      "lat": 17.9156,
+      "lon": 106.3982,
+      "p_station_kw": 60,
+      "available_slots": 4,
+      "setup_time_min": 7,
+      "status": "active",
+      "amenities": [
+        "scenic_view",
+        "restaurant",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_QT_22",
+      "name": "VinFast Hải Lăng",
+      "lat": 16.6854,
+      "lon": 107.2451,
+      "p_station_kw": 60,
+      "available_slots": 3,
+      "setup_time_min": 6,
+      "status": "active",
+      "amenities": [
+        "coffee",
+        "restroom"
+      ]
+    },
+    {
+      "id": "ST_HU_23",
+      "name": "Trạm sạc Phong Điền",
+      "lat": 16.6132,
+      "lon": 107.3914,
+      "p_station_kw": 30,
+      "available_slots": 2,
+      "setup_time_min": 5,
+      "status": "maintenance",
+      "amenities": [
+        "restroom",
+        "convenience_store"
+      ]
     }
   ]
 }
