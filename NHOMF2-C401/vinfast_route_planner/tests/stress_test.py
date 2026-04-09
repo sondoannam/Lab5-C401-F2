@@ -5,7 +5,7 @@ import os
 from typing import List, Dict, Any
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from core.route_planner import plan_route
+from vinfast_route_planner.core.route_planner import plan_route
 
 def generate_mock_stations(num_stations: int) -> List[Dict[str, Any]]:
     stations: List[Dict[str, Any]] = []

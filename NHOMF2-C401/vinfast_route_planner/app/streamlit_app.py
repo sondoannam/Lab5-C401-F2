@@ -1,7 +1,7 @@
 import streamlit as st
 
 from vinfast_route_planner.core.config import DEFAULT_DESTINATION, DEFAULT_ORIGIN, VEHICLE
-from vinfast_route_planner.core.planner import plan_route
+from vinfast_route_planner.core.route_planner import plan_route
 from vinfast_route_planner.services.summary_service import generate_summary
 from vinfast_route_planner.utils.data_loader import list_station_names
 from vinfast_route_planner.utils.formatters import minutes_to_text, pct

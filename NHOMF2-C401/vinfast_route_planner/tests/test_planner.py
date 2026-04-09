@@ -1,4 +1,4 @@
-from vinfast_route_planner.core.planner import plan_route
+from vinfast_route_planner.core.route_planner import plan_route
 from vinfast_route_planner.utils.data_loader import (
     list_station_names,
     load_metadata,
