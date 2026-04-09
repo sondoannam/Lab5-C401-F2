@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from core.config import VEHICLE
 from core.models import RouteStop, Station
 from data.station_repository import load_metadata, load_stations
@@ -43,6 +45,12 @@ ORIGIN_COORDS = {
 }
 
 
+def _distance_to_destination(
+    coords: tuple[float, float], destination: tuple[float, float]
+) -> float:
+    return haversine_km(coords[0], coords[1], destination[0], destination[1])
+
+
 def _soc_after_drive(soc_in: float, distance_km: float) -> float:
     energy_used = PLANNER_VEHICLE["e_kwh_per_km"] * distance_km
     return soc_in - (energy_used / PLANNER_VEHICLE["Q_kwh"])
@@ -61,16 +69,48 @@ def _charge_minutes(
 
 
 def _sorted_candidate_stations(origin: tuple[float, float], destination: tuple[float, float]) -> list[Station]:
-    destination_lat, destination_lon = destination
     stations = load_stations()
     filtered = [
         station
         for station in stations
         if station.status == "active" and station.available_slots > 0
-        if haversine_km(origin[0], origin[1], station.lat, station.lon)
-        < haversine_km(origin[0], origin[1], destination_lat, destination_lon)
+        if _distance_to_destination((station.lat, station.lon), destination)
+        < _distance_to_destination(origin, destination)
     ]
-    return sorted(filtered, key=lambda station: station.lat, reverse=True)
+    return sorted(
+        filtered,
+        key=lambda station: _distance_to_destination((station.lat, station.lon), destination),
+        reverse=True,
+    )
+
+
+def _reachable_next_stations(
+    current_coords: tuple[float, float],
+    current_soc: float,
+    destination_coords: tuple[float, float],
+    candidates: list[Station],
+    used_station_ids: frozenset[str],
+) -> list[tuple[Station, float, float]]:
+    reachable = []
+    current_distance_to_destination = _distance_to_destination(
+        current_coords, destination_coords
+    )
+    for station in candidates:
+        if station.id in used_station_ids:
+            continue
+        station_coords = (station.lat, station.lon)
+        if (
+            _distance_to_destination(station_coords, destination_coords)
+            >= current_distance_to_destination
+        ):
+            continue
+        distance_km = haversine_km(
+            current_coords[0], current_coords[1], station.lat, station.lon
+        )
+        soc_arrive = _soc_after_drive(current_soc, distance_km)
+        if soc_arrive >= PLANNER_VEHICLE["soc_hard"]:
+            reachable.append((station, distance_km, soc_arrive))
+    return reachable
 
 
 def plan_route(origin: str, destination: str, soc_current: float, soc_comfort: float = 0.20) -> dict:
@@ -87,67 +127,87 @@ def plan_route(origin: str, destination: str, soc_current: float, soc_comfort: f
         }
 
     current_soc = soc_current
-    current_coords = origin_coords
-    total_time = 0
-    warnings: list[str] = []
-    stops: list[RouteStop] = []
     candidates = _sorted_candidate_stations(origin_coords, destination_coords)
 
-    while True:
+    @lru_cache(maxsize=None)
+    def _best_plan(
+        current_coords: tuple[float, float],
+        current_soc_state: float,
+        used_station_ids: frozenset[str],
+    ) -> tuple[float, list[tuple[Station, float, float, int, float]], float] | None:
         distance_to_destination = haversine_km(
             current_coords[0],
             current_coords[1],
             destination_coords[0],
             destination_coords[1],
         )
-        soc_at_destination = _soc_after_drive(current_soc, distance_to_destination)
+        soc_at_destination = _soc_after_drive(current_soc_state, distance_to_destination)
         if soc_at_destination >= PLANNER_VEHICLE["soc_hard"]:
-            total_time += estimate_drive_minutes(distance_to_destination)
-            if soc_at_destination < soc_comfort:
-                warnings.append("Buffer mong o chang cuoi, can nhac sac som hon.")
-            break
+            return estimate_drive_minutes(distance_to_destination), [], soc_at_destination
 
-        reachable = []
-        for station in candidates:
-            if any(stop.station.id == station.id for stop in stops):
-                continue
-            distance_km = haversine_km(
-                current_coords[0], current_coords[1], station.lat, station.lon
-            )
-            soc_arrive = _soc_after_drive(current_soc, distance_km)
-            if soc_arrive >= PLANNER_VEHICLE["soc_hard"]:
-                reachable.append((station, distance_km, soc_arrive))
+        reachable = _reachable_next_stations(
+            current_coords,
+            current_soc_state,
+            destination_coords,
+            candidates,
+            used_station_ids,
+        )
 
         if not reachable:
-            return {
-                "stops": [stop.to_dict() for stop in stops],
-                "total_time_min": total_time,
-                "feasible": False,
-                "warnings": ["Khong co tram sac kha dung tiep theo voi muc pin hien tai."],
-                "soc_hard": PLANNER_VEHICLE["soc_hard"],
-                "soc_comfort": soc_comfort,
-            }
+            return None
 
-        station, distance_km, soc_arrive = max(
-            reachable,
-            key=lambda item: haversine_km(
-                item[0].lat, item[0].lon, destination_coords[0], destination_coords[1]
-            ) * -1,
-        )
-        soc_depart = max(PLANNER_VEHICLE["soc_target_default"], soc_comfort)
-        charge_min = _charge_minutes(
-            soc_arrive,
-            soc_depart,
-            station.p_station_kw,
-            station.setup_time_min or PLANNER_VEHICLE["default_setup_time_min"],
-        )
+        best_option = None
+        best_total_time = None
+        target_soc = max(PLANNER_VEHICLE["soc_target_default"], soc_comfort)
+
+        for station, distance_km, soc_arrive in reachable:
+            drive_min = estimate_drive_minutes(distance_km)
+            charge_min = _charge_minutes(
+                soc_arrive,
+                target_soc,
+                station.p_station_kw,
+                station.setup_time_min or PLANNER_VEHICLE["default_setup_time_min"],
+            )
+            next_plan = _best_plan(
+                (station.lat, station.lon),
+                round(target_soc, 4),
+                used_station_ids | frozenset({station.id}),
+            )
+            if next_plan is None:
+                continue
+
+            future_time, future_stops, destination_soc = next_plan
+            total_time = drive_min + charge_min + future_time
+            current_stop = (station, distance_km, soc_arrive, charge_min, target_soc)
+
+            if best_total_time is None or total_time < best_total_time:
+                best_total_time = total_time
+                best_option = (total_time, [current_stop, *future_stops], destination_soc)
+
+        return best_option
+
+    best_plan = _best_plan(origin_coords, round(current_soc, 4), frozenset())
+    if best_plan is None:
+        return {
+            "stops": [],
+            "total_time_min": 0,
+            "feasible": False,
+            "warnings": ["Khong co tram sac kha dung tiep theo voi muc pin hien tai."],
+            "soc_hard": PLANNER_VEHICLE["soc_hard"],
+            "soc_comfort": soc_comfort,
+        }
+
+    total_time, stop_specs, destination_soc = best_plan
+    warnings: list[str] = []
+    stops = []
+    current_coords = origin_coords
+
+    for station, distance_km, soc_arrive, charge_min, soc_depart in stop_specs:
         drive_min = estimate_drive_minutes(distance_km)
-
         if soc_arrive < soc_comfort:
             warnings.append(
                 f"Buffer mong khi den {station.name}: {round(soc_arrive * 100)}%."
             )
-
         stops.append(
             RouteStop(
                 station=station,
@@ -158,13 +218,14 @@ def plan_route(origin: str, destination: str, soc_current: float, soc_comfort: f
                 charge_min=charge_min,
             )
         )
-        total_time += drive_min + charge_min
         current_coords = (station.lat, station.lon)
-        current_soc = soc_depart
+
+    if destination_soc < soc_comfort:
+        warnings.append("Buffer mong o chang cuoi, can nhac sac som hon.")
 
     return {
         "stops": [stop.to_dict() for stop in stops],
-        "total_time_min": total_time,
+        "total_time_min": int(total_time),
         "feasible": True,
         "warnings": warnings,
         "soc_hard": PLANNER_VEHICLE["soc_hard"],
