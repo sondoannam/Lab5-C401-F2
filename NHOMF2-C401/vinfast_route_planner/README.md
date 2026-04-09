@@ -27,6 +27,6 @@ vinfast_route_planner/
 ## Run
 
 ```bash
-pip install streamlit requests
+pip install -r requirements.txt
 streamlit run NHOMF2-C401/vinfast_route_planner/app/streamlit_app.py
 ```

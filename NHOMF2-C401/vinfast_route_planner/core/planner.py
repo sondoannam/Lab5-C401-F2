@@ -2,7 +2,7 @@ from functools import lru_cache
 
 from core.config import VEHICLE
 from core.models import RouteStop, Station
-from data.station_repository import load_metadata, load_stations
+from utils.data_loader import load_metadata, load_stations, filter_active_stations
 from services.distance_service import estimate_drive_minutes, haversine_km
 
 
@@ -70,10 +70,10 @@ def _charge_minutes(
 
 def _sorted_candidate_stations(origin: tuple[float, float], destination: tuple[float, float]) -> list[Station]:
     stations = load_stations()
+    active_stations = filter_active_stations(stations)
     filtered = [
         station
-        for station in stations
-        if station.status == "active" and station.available_slots > 0
+        for station in active_stations
         if _distance_to_destination((station.lat, station.lon), destination)
         < _distance_to_destination(origin, destination)
     ]

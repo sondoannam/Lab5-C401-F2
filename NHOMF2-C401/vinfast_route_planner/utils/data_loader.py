@@ -1,18 +1,22 @@
 import json
+import streamlit as st
 
 from core.config import STATIONS_FILE
 from core.models import Station
 
 
+@st.cache_data
 def load_station_dataset() -> dict:
     with open(STATIONS_FILE, "r", encoding="utf-8") as file:
         return json.load(file)
 
 
+@st.cache_data
 def load_metadata() -> dict:
     return load_station_dataset().get("metadata", {})
 
 
+@st.cache_data
 def load_stations() -> list[Station]:
     raw_stations = load_station_dataset().get("stations", [])
     return [
@@ -29,4 +33,13 @@ def load_stations() -> list[Station]:
             status=station.get("status", "active"),
         )
         for station in raw_stations
+    ]
+
+
+def filter_active_stations(stations: list[Station]) -> list[Station]:
+    """Loại bỏ các trạm bảo trì (không active) hoặc hết slot trống."""
+    return [
+        station
+        for station in stations
+        if station.status == "active" and station.available_slots > 0
     ]
