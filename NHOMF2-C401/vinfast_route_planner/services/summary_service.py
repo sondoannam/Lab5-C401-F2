@@ -36,8 +36,8 @@ def format_planner_output_for_llm(data: dict) -> str:
     total_drive_min = max(data["total_time_min"] - total_charge_min, 0)
 
     lines.append(f"STATUS: {'Feasible' if data['feasible'] else 'INFEASIBLE'}")
-    lines.append(f"PLANNED SAFETY BUFFER: {round(data['soc_comfort'] * 100)}%")
-    lines.append(f"ABSOLUTE MINIMUM BUFFER: {round(data['soc_hard'] * 100)}%")
+    lines.append(f"PLANNED RESERVE BATTERY LEVEL: {round(data['soc_comfort'] * 100)}%")
+    lines.append(f"ABSOLUTE MINIMUM RESERVE BATTERY LEVEL: {round(data['soc_hard'] * 100)}%")
     lines.append(f"ESTIMATED TOTAL TRIP TIME: {data['total_time_min']} minutes")
     lines.append(f"TOTAL DRIVE TIME: {total_drive_min} minutes")
     lines.append(f"TOTAL CHARGING TIME: {total_charge_min} minutes")
