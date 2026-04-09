@@ -48,3 +48,6 @@ htmlcov/
 
 # Documentation constraints
 docs/prompt/
+.agent/
+.agents/
+references/
