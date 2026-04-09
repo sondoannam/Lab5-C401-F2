@@ -18,27 +18,31 @@ _MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-oss-20b:free")
 
 
 def _station_label(p_kw: float) -> str:
-    """Phân loại trạm theo công suất, dùng đúng thuật ngữ VinFast."""
+    """Map station power to the charging label used in summaries."""
     if p_kw >= 150:
-        return "Siêu trạm sạc VinFast"
+        return "VinFast Super Charging Hub"
     elif p_kw >= 60:
-        return "Trạm sạc nhanh DC"
-    return "Trạm sạc tiêu chuẩn"
+        return "Fast DC Charging Station"
+    return "Standard Charging Station"
 
 
 def format_planner_output_for_llm(data: dict) -> str:
-    """Chuyển dict của plan_route() thành plain text để đưa vào LLM."""
+    """Convert planner output into plain text for the LLM."""
     lines = []
+    stops = data.get("stops", [])
+    total_charge_min = sum(stop.get("charge_min", 0) for stop in stops)
+    total_drive_min = max(data["total_time_min"] - total_charge_min, 0)
 
-    lines.append(f"TRẠNG THÁI: {'Khả thi' if data['feasible'] else 'KHÔNG khả thi'}")
-    lines.append(f"BUFFER AN TOÀN KẾ HOẠCH: {round(data['soc_comfort'] * 100)}%")
-    lines.append(f"NGƯỠNG TUYỆT ĐỐI (SoC_hard): {round(data['soc_hard'] * 100)}%")
-    lines.append(f"TỔNG THỜI GIAN ƯỚC TÍNH: {data['total_time_min']} phút")
+    lines.append(f"STATUS: {'Feasible' if data['feasible'] else 'INFEASIBLE'}")
+    lines.append(f"PLANNED SAFETY BUFFER: {round(data['soc_comfort'] * 100)}%")
+    lines.append(f"ABSOLUTE MINIMUM BUFFER: {round(data['soc_hard'] * 100)}%")
+    lines.append(f"ESTIMATED TOTAL TRIP TIME: {data['total_time_min']} minutes")
+    lines.append(f"TOTAL DRIVE TIME: {total_drive_min} minutes")
+    lines.append(f"TOTAL CHARGING TIME: {total_charge_min} minutes")
+    lines.append(f"NUMBER OF CHARGING STOPS: {len(stops)}")
     lines.append("")
 
-    stops = data.get("stops", [])
     if stops:
-        lines.append(f"SỐ ĐIỂM DỪNG SẠC: {len(stops)}")
         for i, stop in enumerate(stops, 1):
             st = stop["station"]
             soc_arrive_pct = round(stop["soc_arrive"] * 100)
@@ -46,27 +50,37 @@ def format_planner_output_for_llm(data: dict) -> str:
             soc_comfort_pct = round(data["soc_comfort"] * 100)
             soc_hard_pct = round(data["soc_hard"] * 100)
 
-            # 3 mức cảnh báo theo spec
             if soc_arrive_pct >= soc_comfort_pct:
                 warning_tag = "OK"
             elif soc_arrive_pct >= soc_hard_pct:
-                warning_tag = "CẢNH BÁO VÀNG - buffer mỏng"
+                warning_tag = "YELLOW WARNING"
             else:
-                warning_tag = "VI PHẠM SoC_hard"
+                warning_tag = "VIOLATION"
 
-            amenities_str = st.get("amenities_text") or (", ".join(st.get("amenities", [])) or "không có thông tin")
+            amenities_str = st.get("amenities_text") or (
+                ", ".join(st.get("amenities", [])) or "no amenity information"
+            )
+            charge_line = (
+                f"Charge to: {soc_depart_pct}% (~{stop['charge_min']} minutes)"
+                if soc_depart_pct > soc_arrive_pct and stop["charge_min"] > 0
+                else "No additional charging needed"
+            )
 
-            lines.append(f"\nĐIỂM DỪNG {i}: {st['name']} [{_station_label(st['p_station_kw'])}, {st['p_station_kw']} kW]")
-            lines.append(f"  Khoảng cách từ điểm trước: {stop['distance_from_prev_km']} km (~{stop['drive_min_from_prev']} phút lái)")
-            lines.append(f"  SoC khi đến: {soc_arrive_pct}% [{warning_tag}]")
-            lines.append(f"  Sạc lên: {soc_depart_pct}% (~{stop['charge_min']} phút)")
-            lines.append(f"  Tiện ích: {amenities_str}")
+            lines.append(
+                f"\nSTOP {i}: {st['name']} [{_station_label(st['p_station_kw'])}, {st['p_station_kw']} kW]"
+            )
+            lines.append(
+                f"  Distance from previous point: {stop['distance_from_prev_km']} km (~{stop['drive_min_from_prev']} drive minutes)"
+            )
+            lines.append(f"  SoC on arrival: {soc_arrive_pct}% [{warning_tag}]")
+            lines.append(f"  {charge_line}")
+            lines.append(f"  Amenities: {amenities_str}")
     else:
-        lines.append("SỐ ĐIỂM DỪNG SẠC: 0 (xe đến đích không cần dừng sạc)")
+        lines.append("NUMBER OF CHARGING STOPS: 0 (vehicle can reach the destination without charging)")
 
     warnings = data.get("warnings", [])
     if warnings:
-        lines.append("\nCẢNH BÁO TỪ HỆ THỐNG:")
+        lines.append("\nSYSTEM WARNINGS:")
         for w in warnings:
             lines.append(f"  - {w}")
 
@@ -74,12 +88,15 @@ def format_planner_output_for_llm(data: dict) -> str:
 
 
 def generate_summary(plan_result: dict) -> str:
-    """Gọi LLM qua OpenRouter, trả Markdown tóm tắt hành trình."""
+    """Call the LLM via OpenRouter and return a Markdown trip summary."""
     user_message = format_planner_output_for_llm(plan_result)
 
-    # Nếu không có API KEY thật, bypass phần gọi LLM để App không bị crash.
     if not os.getenv("OPENROUTER_API_KEY"):
-        return f"⚠️ **CẢNH BÁO: Hệ thống chưa được cấu hình `OPENROUTER_API_KEY` trong biến môi trường hoặc file `.env`. Dưới đây là dữ liệu thô (chưa qua LLM):**\n\n```text\n{user_message}\n```"
+        return (
+            "⚠️ **WARNING: `OPENROUTER_API_KEY` is not configured in the environment or `.env` file. "
+            "Below is the raw planner payload (not yet summarized by the LLM):**\n\n"
+            f"```text\n{user_message}\n```"
+        )
 
     try:
         response = _client.chat.completions.create(
@@ -92,4 +109,4 @@ def generate_summary(plan_result: dict) -> str:
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"🔴 **Lỗi kết nối tới LLM Service:** {str(e)}\n\n```text\n{user_message}\n```"
+        return f"🔴 **LLM service connection error:** {str(e)}\n\n```text\n{user_message}\n```"
