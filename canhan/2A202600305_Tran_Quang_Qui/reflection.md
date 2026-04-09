@@ -11,19 +11,18 @@ Prompt Engineer & AI Service. Phụ trách thiết kế system prompt, agent too
 - Xây dựng prototype chatbot riêng (Streamlit) dùng để demo nội bộ và trao đổi kỹ thuật giữa các nhóm: agentic loop với Function Calling qua OpenRouter, hiển thị thinking log real-time (agent gọi tool gì, bước nào), chip gợi ý context-aware, bản đồ lộ trình on-demand trong chat bubble.
 
 ## 3. SPEC mạnh/yếu
-- Mạnh nhất: Áp dụng tư duy đa ngôn ngữ trong 1 prompt (Mixed-language Prompt). Hệ quả là Force LLM nói thuần Tiếng Việt thành công 100% thay vì tỉ lệ lỗi chèn tiếng Anh vô tình của các Open-source Models nhỏ.
+- Mạnh nhất: Nhóm giữ được đúng core value của spec — giải quyết bài toán "range anxiety" bằng route planning có tính đến SoC, mức pin an toàn, điểm dừng sạc và cảnh báo rủi ro. Phần AI Agent cũng hoạt động thật: LLM tự quyết định gọi tool nào, không cần hard-code flow, và vẫn trả lời tự nhiên bằng tiếng Việt nhờ cách thiết kế prompt.
 - Yếu nhất: Tham số truyền vào Prompt cho xe là cố định (VF8 tĩnh). Tương lai nên nhúng Data config xe động vào Prompt context.
 
 ## 4. Đóng góp khác
-- Review lại độ ổn định của giao diện (UI) để tương thích hiển thị text markdown của LLM.
-- Thuyết minh và định hình Tone giọng của bot trong báo cáo demo.
+Ngoài phần kỹ thuật, mình cũng ngồi kiểm tra lại xem chatbot hiển thị markdown có bị lỗi format không — vì LLM hay trả về text có bullet, bold, code block mà giao diện không render đúng thì trông rất tệ. Ngoài ra mình cũng là người chốt tone giọng cho bot: thân thiện, nói tiếng Việt tự nhiên, không quá robot, không quá "thư ký văn phòng".
 
 ## 5. Điều học được
-Dù cố gắng ra lệnh "Hãy nói Tiếng Việt" cho model, nhưng model có xu hướng vỡ kịch bản nếu Template truyền mẫu bằng Tiếng Anh. Thiết kế Prompt là một dạng kĩ sư ngôn ngữ học kết hợp lập trình cấu trúc tâm lý AI.
+Cái mình học được nhiều nhất là: chỉ nói "hãy trả lời bằng tiếng Việt" trong prompt là chưa đủ. Mấy model nhỏ, rẻ tiền rất hay bị "loạn ngôn ngữ" — đặc biệt khi phần template ví dụ trong prompt lại viết bằng tiếng Anh, nó sẽ học theo template đó và trộn ngôn ngữ vô tình. Giải pháp là tách rõ: phần logic/instruction viết tiếng Anh để model hiểu cấu trúc, còn phần format output thì viết tiếng Việt để nó bắt chước đúng giọng. Cách này hiệu quả hơn nhiều so với chỉ ra lệnh.
 
 ## 6. Nếu làm lại
-Sẽ áp dụng kĩ thuật Prompt Caching hoặc Streaming Output để giảm độ trễ hiển thị response của LLM trên giao diện chat.
+Phần mình tiếc nhất là chưa làm được Streaming — tức là để response của LLM hiện ra từng chữ thay vì chờ cả đoạn rồi mới hiện. Với demo thì độ trễ vài giây vẫn chấp nhận được, nhưng nếu thực sự deploy cho người dùng thì cảm giác "chờ" đó sẽ làm người ta mất kiên nhẫn rất nhanh. Lần sau sẽ ưu tiên làm streaming từ đầu.
 
 ## 7. AI giúp gì / AI sai gì
-- **Giúp:** AI giải mã được hành vi "loạn ngôn ngữ" của mô hình rẻ tiền và tự đề xuất phương án mix prompt "Lõi Tiếng Anh - Format Tiếng Việt" siêu thông minh.
-- **Sai:** Ban đầu AI gợi ý 1 rule ép Tiếng Việt và tự tưởng vậy là đủ, gây nguy cơ rủi ro cao khi test production nếu không tỉnh táo nghi ngờ.
+- **Giúp:** Khi mình mô tả vấn đề "model cứ chèn tiếng Anh dù đã dặn tiếng Việt", AI phân tích được nguyên nhân khá chính xác và gợi ý ngay cách mix prompt — thứ mình không nghĩ tới lúc đầu. Tiết kiệm được kha khá thời gian thử sai.
+- **Sai:** AI ban đầu tự tin gợi ý chỉ cần thêm 1 dòng "Always respond in Vietnamese" là xong. Mình test thử thì vẫn lỗi. Phải hỏi thêm vài vòng nó mới ra được giải pháp thực sự. Bài học là không nên tin AI ở lần đầu tiên, nhất là với những thứ liên quan đến behavior của model.
